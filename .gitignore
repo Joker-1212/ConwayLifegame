@@ -1,3 +1,10 @@
 *.html
 *.exe
 *.pyc
+.vscode/*
+build/*
+cpp_core/build/*
+*/__pycache__
+Release/*
+*/smart_life_core.*
+smart_life_core.pyd

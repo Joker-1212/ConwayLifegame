@@ -1,0 +1,18 @@
+# Smart Game of Life Configuration
+# Minimum number of neighbors for a cell to survive
+Live_min = 2
+
+# Maximum number of neighbors for a cell to survive  
+Live_max = 3
+
+# Minimum number of neighbors for a cell to be born
+Breed_min = 3
+
+# Maximum number of neighbors for a cell to be born
+Breed_max = 3
+
+# Cell vision distance
+Vision = 5
+
+# Cell death probability
+Death_rate = 0.1
