@@ -35,3 +35,19 @@ conda install --yes --file .\requirements.txt
 ```
 pip install -r .\requirements.txt
 ```
+
+## Compilation
+
+该项目目前仅支持 `Windows` 下自动编译
+
+1. 安装 MSVC 编译器：[https://visualstudio.microsoft.com/zh-hans/downloads/#build-tools-for-visual-studio-2022](https://visualstudio.microsoft.com/zh-hans/downloads/#build-tools-for-visual-studio-2022)
+
+2. 安装 [CMake](https://cmake.org/)并添加到 `PATH` 环境变量
+
+3. 在终端运行如下命令：
+
+```bash
+cd Your\dir\name
+.\build.bat
+python .\test_windows.py
+```
