@@ -1,4 +1,5 @@
 #include "../include/game_environment.h"
+#include "../include/cell.h"
 #include <iostream>
 
 /**
@@ -11,7 +12,13 @@
 GameEnvironment::GameEnvironment(int width, int height, const std::string &config_file)
     : width_(width), height_(height), config_(config_file)
 {
-    // TODO
+    // TODO:构造函数
+}
+
+const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
+{
+    // TODO:返回所有细胞
+    return std::vector<std::shared_ptr<Cell>>();
 }
 
 void GameEnvironment::initializeRandom(int num_cells)
