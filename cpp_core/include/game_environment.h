@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "config_parser.h"
+#include "cell.h"
 #include <vector>
 #include <memory>
 
@@ -124,6 +125,15 @@ public:
      * @brief 打印当前配置
      */
     void printConfig() const;
+
+    /**
+     * @brief 获取环境中所有细胞的列表
+     * @return 包含所有细胞智能指针的常量引用
+     *
+     * 这个方法在PyBind11绑定中被get_cell_positions方法调用
+     * 用于获取细胞的详细信息并返回给Python端
+     */
+    const std::vector<std::shared_ptr<Cell>> &getCells() const;
 };
 
 #endif // GAME_ENVIRONMENT_H

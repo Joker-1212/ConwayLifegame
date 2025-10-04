@@ -23,6 +23,7 @@ endif()
 set(SOURCES
     src/game_environment.cpp
     src/config_parser.cpp
+    src/cell.cpp
 )
 
 # 创建静态库

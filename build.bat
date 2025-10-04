@@ -10,7 +10,6 @@ where cmake >nul 2>nul
 if %ERRORLEVEL% neq 0 (
     echo Error: CMake not found in PATH
     echo Please install CMake and add it to PATH
-    pause
     exit /b 1
 )
 
@@ -40,7 +39,6 @@ cmake ..\..\cpp_core -A x64
 if %ERRORLEVEL% neq 0 (
     echo Error: CMake configuration failed for core library
     cd ..\..
-    pause
     exit /b 1
 )
 
@@ -48,7 +46,6 @@ cmake --build . --config Release
 if %ERRORLEVEL% neq 0 (
     echo Error: Build failed for core library
     cd ..\..
-    pause
     exit /b 1
 )
 
@@ -76,7 +73,6 @@ cmake ..\..\python_bindings -A x64 ^
 if %ERRORLEVEL% neq 0 (
     echo Error: CMake configuration failed for Python bindings
     cd ..\..
-    pause
     exit /b 1
 )
 
@@ -84,7 +80,6 @@ cmake --build . --config Release
 if %ERRORLEVEL% neq 0 (
     echo Error: Build failed for Python bindings
     cd ..\..
-    pause
     exit /b 1
 )
 
