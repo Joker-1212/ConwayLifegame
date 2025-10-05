@@ -1,14 +1,12 @@
 #include "../include/game_environment.h"
 #include "../include/cell.h"
 #include <iostream>
-
 /**
  * @file game_environment.cpp
  * @brief 游戏环境实现文件
  *
  * 实现游戏环境接口，仅保留 Python 绑定中使用的方法
  */
-
 GameEnvironment::GameEnvironment(int width, int height, const std::string &config_file)
     : width_(width), height_(height), config_(config_file)
 {
@@ -28,10 +26,10 @@ void GameEnvironment::initializeRandom(int num_cells)
 
 void GameEnvironment::update()
 {
-	// Test Code
     // TODO:更新游戏状态
+    //lead up
 }
-
+    
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 {
     // TODO:根据移动更新状态
