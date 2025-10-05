@@ -28,6 +28,7 @@ void GameEnvironment::initializeRandom(int num_cells)
 
 void GameEnvironment::update()
 {
+	// Test Code
     // TODO:更新游戏状态
 }
 
