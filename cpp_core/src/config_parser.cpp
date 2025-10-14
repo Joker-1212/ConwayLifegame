@@ -29,44 +29,44 @@ bool ConfigParser::saveConfig()
 
 int ConfigParser::getInt(const std::string &key, int default_value) const
 {
-    // TODO：获取整型配置值
+    // TODO：获取类型为整型的配置值（例如 X, Y）
     return default_value;
 }
 
 double ConfigParser::getDouble(const std::string &key, double default_value) const
 {
-    // TODO：获取浮点型配置值
+    // TODO：获取类型为浮点型的配置值（例如 Death_Rate）
     return default_value;
 }
 
 std::string ConfigParser::getString(const std::string &key, const std::string &default_value) const
 {
-    // TODO：获取字符串配置值
+    // TODO：获取类型为字符串的配置值
     return default_value;
 }
 
 void ConfigParser::setInt(const std::string &key, int value)
 {
-    // TODO：设置整型配置值
+    // TODO：设置类型为整型的配置值
 }
 
 void ConfigParser::setDouble(const std::string &key, double value)
 {
-    // TODO：设置浮点型配置值
+    // TODO：设置类型为浮点型的配置值
 }
 
 void ConfigParser::setString(const std::string &key, const std::string &value)
 {
-    // TODO：设置字符串配置值
+    // TODO：设置类型为字符串的配置值
 }
 
 bool ConfigParser::hasKey(const std::string &key) const
 {
-    // TODO：检查配置键是否存在
+    // TODO：检查配置键值对是否存在
     return false;
 }
 
 void ConfigParser::printAll() const
 {
-    // TODO：打印所有配置值
+    // TODO：输出所有配置值
 }
