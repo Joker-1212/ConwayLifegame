@@ -55,8 +55,8 @@ public:
     void updateWithMoves(const std::vector<int> &moves);
 
     /**
-     * @brief 获取细胞状态观察
-     * @return 细胞状态向量
+     * @brief 获取细胞附近环境状态
+     * @return 细胞附近环境状态向量
      */
     std::vector<std::vector<float>> getCellStates() const;
 
@@ -91,14 +91,14 @@ public:
     // Getter 方法 - 在 Python 绑定中使用
 
     /**
-     * @brief 获取环境宽度
-     * @return 环境宽度值
+     * @brief 获取网格宽度
+     * @return 网格宽度值
      */
     int getWidth() const { return width_; }
 
     /**
-     * @brief 获取环境高度
-     * @return 环境高度值
+     * @brief 获取网格高度
+     * @return 网格高度值
      */
     int getHeight() const { return height_; }
 
