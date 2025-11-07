@@ -10,18 +10,17 @@
 GameEnvironment::GameEnvironment(int width, int height, const std::string &config_file)
     : width_(width), height_(height), config_(config_file), grid_(height, std::vector<bool>(width, false))
 {
-    // TODO:构造函数
 }
 
 const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 {
-    // TODO:返回细胞列表
-    return cells_;
+    // TODO:返回活细胞列表
+    return std::vector<std::shared_ptr<Cell>>();
 }
 
 void GameEnvironment::initializeRandom(int num_cells)
 {
-    // TODO:随机初始化细胞
+    // TODO:在随机位置放置细胞
 }
 
 void GameEnvironment::update()
@@ -31,7 +30,10 @@ void GameEnvironment::update()
 
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 {
-    // TODO:根据移动更新状态
+    // TODO:根据移动列表更新状态（移动列表和细胞列表中的细胞一一对应）
+    // 0~3 上下左右
+    // 4~7 左上右上左下右下
+    // 8 不动
 }
 
 std::vector<std::vector<float>> GameEnvironment::getCellStates() const
@@ -49,7 +51,7 @@ std::vector<std::vector<bool>> GameEnvironment::getGridState() const
 
 std::vector<Position> GameEnvironment::getEmptyNeighbors(const Position &pos, int d) const
 {
-    // TODO:获取空邻居位置
+    // TODO:返回空邻居位置
     return std::vector<Position>();
 }
 
