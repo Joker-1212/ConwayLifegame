@@ -26,7 +26,7 @@ struct Position
      * @param x X 坐标，默认为 0
      * @param y Y 坐标，默认为 0
      */
-    Position(int x = 0, int y = 0) : x(x), y(y) {}
+    Position(int x_ = 0, int y_ = 0) : x(x_), y(y_) {}
 
     /**
      * @brief 位置相等比较运算符重载

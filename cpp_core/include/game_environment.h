@@ -23,8 +23,10 @@
 class GameEnvironment
 {
 private:
-    int width_, height_;  ///< 网格尺寸
-    ConfigParser config_; ///< 配置管理器
+    int width_, height_;                       ///< 网格尺寸
+    ConfigParser config_;                      ///< 配置管理器
+    std::vector<std::vector<bool>> grid_;      ///< 网格状态
+    std::vector<std::shared_ptr<Cell>> cells_; ///< 细胞列表
 
 public:
     /**
@@ -65,7 +67,6 @@ public:
      * @return 网格状态矩阵
      */
     std::vector<std::vector<bool>> getGridState() const;
-
     /**
      * @brief 获取空邻居位置
      * @param pos 中心位置
@@ -112,7 +113,7 @@ public:
      * @brief 获取细胞密度
      * @return 细胞密度值
      */
-    double getDensity() const;
+    float getDensity() const;
 
     // 配置管理方法 - 在 Python 绑定中使用
 

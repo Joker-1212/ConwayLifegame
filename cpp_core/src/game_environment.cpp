@@ -8,15 +8,15 @@
  * 实现游戏环境接口，仅保留 Python 绑定中使用的方法
  */
 GameEnvironment::GameEnvironment(int width, int height, const std::string &config_file)
-    : width_(width), height_(height), config_(config_file)
+    : width_(width), height_(height), config_(config_file), grid_(height, std::vector<bool>(width, false))
 {
     // TODO:构造函数
 }
 
 const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 {
-    // TODO:返回所有细胞
-    return std::vector<std::shared_ptr<Cell>>();
+    // TODO:返回细胞列表
+    return cells_;
 }
 
 void GameEnvironment::initializeRandom(int num_cells)
@@ -27,9 +27,8 @@ void GameEnvironment::initializeRandom(int num_cells)
 void GameEnvironment::update()
 {
     // TODO:更新游戏状态
-    //lead up
 }
-    
+
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 {
     // TODO:根据移动更新状态
@@ -37,14 +36,15 @@ void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 
 std::vector<std::vector<float>> GameEnvironment::getCellStates() const
 {
-    // TODO:获取细胞状态
+    // TODO:将视野范围内的细胞状态打包成二维数组返回
     return std::vector<std::vector<float>>();
 }
 
 std::vector<std::vector<bool>> GameEnvironment::getGridState() const
 {
     // TODO:获取网格状态
-    return std::vector<std::vector<bool>>();
+
+    return grid_;
 }
 
 std::vector<Position> GameEnvironment::getEmptyNeighbors(const Position &pos, int d) const
@@ -62,19 +62,36 @@ bool GameEnvironment::isValidPosition(const Position &pos) const
 bool GameEnvironment::isPositionEmpty(const Position &pos) const
 {
     // TODO:检查位置是否为空
-    return false;
+    if (grid_[pos.y][pos.x] == false)
+        return true;
+    else
+        return false;
 }
 
 int GameEnvironment::getPopulation() const
 {
     // TODO:获取细胞数量
-    return 0;
+    int sum = 0;
+    for (int i = 0; i < height_; i++)
+    {
+        for (int j = 0; j < width_; j++)
+        {
+            if (grid_[i][j])
+            {
+                sum++;
+            }
+        }
+    }
+    return sum;
 }
 
-double GameEnvironment::getDensity() const
+float GameEnvironment::getDensity() const
 {
     // TODO:计算细胞密度
-    return 0.0;
+    int population = getPopulation();
+    int area = width_ * height_;
+    float density = static_cast<float>(population) / area;
+    return density;
 }
 
 void GameEnvironment::reloadConfig()
