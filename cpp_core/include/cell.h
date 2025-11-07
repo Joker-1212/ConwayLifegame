@@ -77,13 +77,13 @@ public:
      * @brief 设置细胞存活状态
      * @param alive 新的存活状态
      */
-    void setAlive(bool alive) { alive_ = alive; }
+    void setAlive(bool alive);
 
     /**
      * @brief 设置细胞能量
      * @param energy 新的能量值
      */
-    void setEnergy(double energy) { energy_ = energy; }
+    void setEnergy(double energy);
 
     /**
      * @brief 增加细胞年龄

@@ -1,16 +1,14 @@
 #include "../include/game_environment.h"
 #include "../include/cell.h"
 #include <iostream>
-
 /**
  * @file game_environment.cpp
  * @brief 游戏环境实现文件
  *
  * 实现游戏环境接口，仅保留 Python 绑定中使用的方法
  */
-
 GameEnvironment::GameEnvironment(int width, int height, const std::string &config_file)
-    : width_(width), height_(height), config_(config_file)
+    : width_(width), height_(height), config_(config_file), grid_(height, std::vector<bool>(width, false))
 {
 }
 
@@ -40,14 +38,15 @@ void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 
 std::vector<std::vector<float>> GameEnvironment::getCellStates() const
 {
-    // TODO:将细胞周围状态打包成二维数组返回
+    // TODO:将视野范围内的细胞状态打包成二维数组返回
     return std::vector<std::vector<float>>();
 }
 
 std::vector<std::vector<bool>> GameEnvironment::getGridState() const
 {
-    // TODO:返回网格状态二维数组
-    return std::vector<std::vector<bool>>();
+    // TODO:获取网格状态
+
+    return grid_;
 }
 
 std::vector<Position> GameEnvironment::getEmptyNeighbors(const Position &pos, int d) const
@@ -65,19 +64,36 @@ bool GameEnvironment::isValidPosition(const Position &pos) const
 bool GameEnvironment::isPositionEmpty(const Position &pos) const
 {
     // TODO:检查位置是否为空
-    return false;
+    if (grid_[pos.y][pos.x] == false)
+        return true;
+    else
+        return false;
 }
 
 int GameEnvironment::getPopulation() const
 {
-    // TODO:返回细胞总数量
-    return 0;
+    // TODO:获取细胞数量
+    int sum = 0;
+    for (int i = 0; i < height_; i++)
+    {
+        for (int j = 0; j < width_; j++)
+        {
+            if (grid_[i][j])
+            {
+                sum++;
+            }
+        }
+    }
+    return sum;
 }
 
-double GameEnvironment::getDensity() const
+float GameEnvironment::getDensity() const
 {
     // TODO:计算细胞密度
-    return 0.0;
+    int population = getPopulation();
+    int area = width_ * height_;
+    float density = static_cast<float>(population) / area;
+    return density;
 }
 
 void GameEnvironment::reloadConfig()
