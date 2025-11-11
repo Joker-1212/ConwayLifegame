@@ -16,3 +16,7 @@ Vision = 5
 
 # Cell death probability
 Death_rate = 0.1
+
+# Grid size
+X = 100
+Y = 100
