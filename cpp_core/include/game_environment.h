@@ -135,13 +135,12 @@ public:
      * 用于获取细胞的详细信息并返回给Python端
      */
     const std::vector<std::shared_ptr<Cell>> &getCells() const;
-    void setCell(Position pos)
-    {
-        /**
-         * @brief 加入细胞
-         * @param pos 细胞位置
-         */
-    }
+    void setCell(Position pos);
+
+    /**
+     * @brief 加入细胞
+     * @param pos 细胞位置
+     */
 };
 
 #endif // GAME_ENVIRONMENT_H
