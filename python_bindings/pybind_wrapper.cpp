@@ -46,6 +46,11 @@ public:
         env_->initializeRandom(num_cells);
     }
 
+    void set_cell(int x, int y)
+    {
+        env_->setCell(Position(x, y));
+    }
+
     void update()
     {
         env_->update();
