@@ -44,7 +44,7 @@ std::vector<std::vector<float>> GameEnvironment::getCellStates() const
 
 std::vector<std::vector<bool>> GameEnvironment::getGridState() const
 {
-    // TODO:获取网格状态
+    // TODO:返回网格状态
 
     return grid_;
 }
