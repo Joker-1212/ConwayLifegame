@@ -105,3 +105,7 @@ void GameEnvironment::printConfig() const
 {
     // TODO:打印配置信息
 }
+void GameEnvironment::setCell(Position pos)
+{
+    grid_[pos.x][pos.y] = true;
+}
