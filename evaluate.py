@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from environment.game_env import SmartGameEnv
-from models.policy_network import DQN
+from models.policy_network import DQNetwork
 from agents.cell_agent import CellAgent
 from config import Config
 
@@ -17,7 +17,7 @@ def evaluate(model_path, num_episodes=10):
     state_size = env.state_size
     action_size = env.action_size
     
-    model = DQN(state_size, Config.HIDDEN_SIZE, action_size)
+    model = DQNetwork(state_size, Config.HIDDEN_SIZE, action_size)
     model.load_state_dict(torch.load(model_path))
     agent = CellAgent(model, state_size, action_size)
     
