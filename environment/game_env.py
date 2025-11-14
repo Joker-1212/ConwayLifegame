@@ -14,23 +14,52 @@ class SmartGameEnv:
     
     def reset(self, num_cells=100):
         """重置环境"""
-        pass
+        self.env.initialize_random(num_cells)
+        return self._get_observation()
     
     def step(self, actions=None):
         """执行一步"""
-        pass
+        if actions is None:
+            self.env.update()
+        else:
+            self.env.update_with_moves(actions)
+        
+        obs = self._get_observation()
+        reward = self._calculate_reward()
+        done = self._is_done()
+        info = {
+            'population': self.env.get_population(),
+            'density': self.env.get_density()
+        }
+        
+        return obs, reward, done, info
     
     def _get_observation(self):
         """获取观察状态"""
-        pass
+        try:
+            return self.env.get_cell_states()
+        except Exception as e:
+            print(f"Error getting cell states: {e}")
+            return np.array([])
     
     def _calculate_reward(self):
         """计算奖励"""
-        pass
+        population = self.env.get_population()
+        density = self.env.get_density()
+        
+        # 基础奖励：种群数量
+        reward = population / (self.width * self.height)
+        
+        # 密度惩罚：避免过度拥挤或过于稀疏
+        if density > 0.7 or density < 0.1:
+            reward -= 0.1
+            
+        return reward
     
     def _is_done(self):
         """检查是否结束"""
-        pass
+        population = self.env.get_population()
+        return population == 0 or population >= self.width * self.height * 0.8
     
     def get_population(self):
         return self.env.get_population()
