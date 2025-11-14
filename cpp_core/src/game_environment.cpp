@@ -14,8 +14,8 @@ GameEnvironment::GameEnvironment(int width, int height, const std::string &confi
 
 const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 {
-    // TODO:返回活细胞列表
-    return std::vector<std::shared_ptr<Cell>>();
+    // 返回活细胞列表
+    return cells_;
 }
 
 void GameEnvironment::initializeRandom(int num_cells)
@@ -44,26 +44,49 @@ std::vector<std::vector<float>> GameEnvironment::getCellStates() const
 
 std::vector<std::vector<bool>> GameEnvironment::getGridState() const
 {
-    // TODO:返回网格状态
+    // 返回网格状态
 
     return grid_;
 }
 
 std::vector<Position> GameEnvironment::getEmptyNeighbors(const Position &pos, int d) const
 {
-    // TODO:返回空邻居位置
-    return std::vector<Position>();
+    // 返回空邻居位置
+    std::vector<Position> emp;
+    for (int i = -d; i <= d; i++)
+    {
+        for (int j = -d; j <= d; j++)
+        {
+            if (i == 0 && j == 0)
+            {
+                continue;
+            }
+            Position nPos{pos.x + i, pos.y + j};
+            if (!grid_[pos.y + j][pos.x + i] && pos.x + i <= width_ && pos.x + i >= 0 && pos.y + j <= height_ && pos.y + j >= 0)
+            {
+                emp.push_back(nPos);
+            }
+        }
+    }
+    return emp;
 }
 
 bool GameEnvironment::isValidPosition(const Position &pos) const
 {
-    // TODO:检查位置有效性
-    return false;
+    // 检查位置是否合法
+    if (pos.x >= 0 && pos.x <= height_ && pos.y >= 0 && pos.y <= width_)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 bool GameEnvironment::isPositionEmpty(const Position &pos) const
 {
-    // TODO:检查位置是否为空
+    // 检查位置是否为空
     if (grid_[pos.y][pos.x] == false)
         return true;
     else
@@ -72,7 +95,7 @@ bool GameEnvironment::isPositionEmpty(const Position &pos) const
 
 int GameEnvironment::getPopulation() const
 {
-    // TODO:获取细胞数量
+    // 获取细胞数量
     int sum = 0;
     for (int i = 0; i < height_; i++)
     {
@@ -89,7 +112,7 @@ int GameEnvironment::getPopulation() const
 
 float GameEnvironment::getDensity() const
 {
-    // TODO:计算细胞密度
+    // 计算细胞密度
     int population = getPopulation();
     int area = width_ * height_;
     float density = static_cast<float>(population) / area;
@@ -107,5 +130,6 @@ void GameEnvironment::printConfig() const
 }
 void GameEnvironment::setCell(Position pos)
 {
-    grid_[pos.x][pos.y] = true;
+    // 在指定位置放置细胞
+    grid_[pos.y][pos.x] = true;
 }
