@@ -6,11 +6,43 @@ import smart_life_core
 class SmartGameEnv:
     def __init__(self, width=50, height=50, config_file="config.txt"):
         # 确保配置文件存在
-        pass
+        if not os.path.exists(config_file):
+            self._create_default_config(config_file)
+            
+        self.env = smart_life_core.GameEnvironment(width, height, config_file)
+        self.width = width
+        self.height = height
+        
+        # 从配置获取视野距离
+        self.config_parser = smart_life_core.ConfigParser(config_file)
+        self.vision_d = self.config_parser.get_int("Vision", 5)
+        self.state_size = (2 * self.vision_d + 1) ** 2
+        self.action_size = 9  # 8个方向 + 不动
         
     def _create_default_config(self, config_file):
         """创建默认配置文件"""
-        pass
+        default_config = """# Smart Game of Life Configuration
+# Minimum number of neighbors for a cell to survive
+Live_min = 2
+
+# Maximum number of neighbors for a cell to survive  
+Live_max = 3
+
+# Minimum number of neighbors for a cell to be born
+Breed_min = 3
+
+# Maximum number of neighbors for a cell to be born
+Breed_max = 3
+
+# Cell vision distance
+Vision = 5
+
+# Cell death probability
+Death_rate = 0.1
+"""
+        with open(config_file, 'w') as f:
+            f.write(default_config)
+        print(f"Created default config file: {config_file}")
     
     def reset(self, num_cells=100):
         """重置环境"""
