@@ -17,6 +17,15 @@ Vision = 5
 # Cell death probability
 Death_rate = 0.1
 
+# Cell energy consume
+Energy_comsumption = 0.1
+
+# Cell energy restore rate
+Restore_prob = 0.1
+Restore_value = 0.1
+
+
+
 # Grid size
 X = 100
 Y = 100
