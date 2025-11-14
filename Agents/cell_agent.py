@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn.functional as F
 
 class CellAgent:
-    def __init__(self, model, state_size, action_size=9) -> list[int]:
+    def __init__(self, model, state_size, action_size=9):
         self.model = model
         self.state_size = state_size
         self.action_size = action_size

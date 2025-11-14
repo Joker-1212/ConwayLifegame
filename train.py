@@ -3,7 +3,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
 from environment.game_env import SmartGameEnv
-from models.policy_network import DQN
+from models.policy_network import DQNetwork
 from agents.cell_agent import CellAgent
 from utils.experience_replay import ExperienceReplay
 from config import Config
@@ -25,8 +25,8 @@ def train():
     action_size = env.action_size
 
     
-    policy_net = DQN(state_size, Config.HIDDEN_SIZE, action_size) # 策略网络
-    target_net = DQN(state_size, Config.HIDDEN_SIZE, action_size) # 目标网络
+    policy_net = DQNetwork(state_size, Config.HIDDEN_SIZE, action_size) # 策略网络
+    target_net = DQNetwork(state_size, Config.HIDDEN_SIZE, action_size) # 目标网络
     target_net.load_state_dict(policy_net.state_dict()) # 
     
     agent = CellAgent(policy_net, state_size, action_size)
@@ -61,7 +61,7 @@ def train():
             if len(state) > 0:
                 for i in range(len(state)):
                     replay_buffer.push(
-                        state[i], actions[i], reward, 
+                        state[i], actions[i], reward,  # type: ignore
                         next_state[i] if i < len(next_state) else np.zeros(state_size),
                         done
                     )
