@@ -56,8 +56,10 @@ class SmartGameEnv:
     
     def reload_config(self):
         """重新加载配置"""
-        pass
+        self.env.reload_config()
+        self.vision_d = self.config_parser.get_int("Vision", 5)
+        self.state_size = (2 * self.vision_d + 1) ** 2
     
     def print_config(self):
         """打印当前配置"""
-        pass
+        self.env.print_config()
