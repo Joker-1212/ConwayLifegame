@@ -131,5 +131,25 @@ void GameEnvironment::printConfig() const
 void GameEnvironment::setCell(Position pos)
 {
     // 在指定位置放置细胞
-    grid_[pos.y][pos.x] = true;
+
+    if (pos.x >= 0 && pos.x <= height_ && pos.y >= 0 && pos.y <= width_ && !grid_[pos.y][pos.x])
+    {
+        if (cells_.size() == 0)
+        {
+            cells_.emplace_back(std::make_shared<Cell>(0, pos));
+        }
+        else
+        {
+            long long maxId = cells_[0]->getId();
+            for (int i = 0; i < cells_.size(); i++)
+            {
+                if (cells_[i]->getId() > maxId)
+                {
+                    maxId = cells_[i]->getId();
+                }
+            }
+            cells_.emplace_back(std::make_shared<Cell>(maxId + 1, pos));
+        }
+        grid_[pos.y][pos.x] = true;
+    }
 }
