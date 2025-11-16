@@ -324,26 +324,26 @@ PYBIND11_MODULE(smart_life_core, m)
         .def(py::init<std::string>(), py::arg("config_file"))
         .def("load_config", &PyConfigParser::load_config,
              "Load configuration from file")
-        .def("save_config", &PyConfigParser::save_config,
-             "Save configuration to file")
+        /*.def("save_config", &PyConfigParser::save_config,
+             "Save configuration to file")*/
         .def("get_int", &PyConfigParser::get_int,
              py::arg("key"), py::arg("default_value"),
              "Get integer configuration value")
         .def("get_double", &PyConfigParser::get_double,
              py::arg("key"), py::arg("default_value"),
              "Get double configuration value")
-        .def("get_string", &PyConfigParser::get_string,
+        /*.def("get_string", &PyConfigParser::get_string,
              py::arg("key"), py::arg("default_value"),
-             "Get string configuration value")
+             "Get string configuration value")*/
         .def("set_int", &PyConfigParser::set_int,
              py::arg("key"), py::arg("value"),
              "Set integer configuration value")
         .def("set_double", &PyConfigParser::set_double,
              py::arg("key"), py::arg("value"),
              "Set double configuration value")
-        .def("set_string", &PyConfigParser::set_string,
+        /*.def("set_string", &PyConfigParser::set_string,
              py::arg("key"), py::arg("value"),
-             "Set string configuration value")
+             "Set string configuration value")*/
         .def("has_key", &PyConfigParser::has_key,
              py::arg("key"),
              "Check if configuration key exists")

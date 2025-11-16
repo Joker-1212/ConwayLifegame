@@ -25,7 +25,8 @@ void GameEnvironment::initializeRandom(int num_cells)
 
 void GameEnvironment::update()
 {
-    // TODO:更新游戏状态
+    // TODO:若所有细胞都静止，更新游戏状态,随机增加能量，增加年龄
+    
 }
 
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
@@ -34,6 +35,7 @@ void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
     // 0~3 上下左右
     // 4~7 左上右上左下右下
     // 8 不动
+    // 随move减少能量
 }
 
 std::vector<std::vector<float>> GameEnvironment::getCellStates() const

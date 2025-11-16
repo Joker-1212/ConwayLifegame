@@ -142,5 +142,4 @@ public:
      * @param pos 细胞位置
      */
 };
-
 #endif // GAME_ENVIRONMENT_H
