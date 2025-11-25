@@ -343,3 +343,16 @@ void GameEnvironment::setCell(Position pos)
         grid_[pos.y][pos.x] = true;
     }
 }
+void GameEnvironment::removeCell(Position pos)
+{
+    // 移除指定位置的细胞
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        if (cells_[i]->getPosition().x == pos.x && cells_[i]->getPosition().y == pos.y)
+        {
+            cells_.erase(cells_.begin() + i);
+            grid_[pos.y][pos.x] = false;
+            break;
+        }
+    }
+}

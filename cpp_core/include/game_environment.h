@@ -148,5 +148,10 @@ public:
      * @brief 加入细胞
      * @param pos 细胞位置
      */
+    void removeCell(Position pos);
+    /**
+     * @brief 移除细胞
+     * @param pos 细胞位置
+     */
 };
 #endif // GAME_ENVIRONMENT_H
