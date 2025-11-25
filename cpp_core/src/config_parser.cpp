@@ -207,3 +207,5 @@ void ConfigParser::printAll() const
     std::cout << "width of the gird is :" << i_config[5] << std::endl;
     std::cout << "height of the gird is :" << i_config[6] << std::endl;
 }
+// TODO:哈希表
+// TODO:字典

@@ -1,6 +1,7 @@
 #include "../include/game_environment.h"
 #include "../include/cell.h"
 #include <iostream>
+#include <random>
 /**
  * @file game_environment.cpp
  * @brief 游戏环境实现文件
@@ -10,8 +11,18 @@
 GameEnvironment::GameEnvironment(int width, int height, const std::string &config_file)
     : width_(width), height_(height), config_(config_file), grid_(height, std::vector<bool>(width, false))
 {
+    // 加载配置
+    Live_max = config_.getInt("Live_max", 3);
+    Live_min = config_.getInt("Live_min", 2);
+    Breed_max = config_.getInt("Breed_max", 3);
+    Breed_min = config_.getInt("Breed_min", 3);
+    Vision = config_.getInt("Vision", 5);
+    Death_Rate = config_.getDouble("Death_Rate", 0.1);
+    Energy_comsumption = config_.getDouble("Energy_comsumption", 0.1);
+    Restore_prob = config_.getDouble("Restore_prob", 0.1);
+    Restore_value = config_.getDouble("Restore_value", 0.2);
+    // TODO:判断用户输入是否合理
 }
-
 const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 {
     // 返回活细胞列表
@@ -20,13 +31,190 @@ const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 
 void GameEnvironment::initializeRandom(int num_cells)
 {
-    // TODO:在随机位置放置细胞
+    // 在随机位置放置细胞
+    //  生成随机数
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist1(0, width_);
+    std::uniform_int_distribution<int> dist2(0, height_);
+    int r1 = dist1(gen);
+    int r2 = dist2(gen);
+    // 放置细胞
+    for (int i = 1; i <= num_cells; i++)
+    {
+        Position pos(r1, r2);
+        if (pos.x >= 0 && pos.x < height_ && pos.y >= 0 && pos.y < width_ && !grid_[pos.y][pos.x])
+        {
+            if (cells_.size() == 0)
+            {
+                cells_.emplace_back(std::make_shared<Cell>(0, pos));
+            }
+            else
+            {
+                long long maxId = cells_[0]->getId();
+                for (int i = 0; i < cells_.size(); i++)
+                {
+                    if (cells_[i]->getId() > maxId)
+                    {
+                        maxId = cells_[i]->getId();
+                    }
+                }
+                cells_.emplace_back(std::make_shared<Cell>(maxId + 1, pos));
+            }
+            grid_[pos.y][pos.x] = true;
+        }
+    }
 }
 
 void GameEnvironment::update()
 {
-    // TODO:若所有细胞都静止，更新游戏状态,随机增加能量，增加年龄
-    
+    // TODO:若所有细胞都静止，更新游戏状态，随机增加能量，增加年龄
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        if (cells_[i]->isAlive())
+        {
+            // 随机增加能量
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<double> dist(0.0, 1.0);
+            double prob = dist(gen);
+            if (prob < Restore_prob)
+            {
+                double new_energy = cells_[i]->getEnergy() + Restore_value;
+                cells_[i]->setEnergy(new_energy);
+            }
+            // 增加年龄
+            cells_[i]->increaseAge();
+        }
+    }
+    // 对于有细胞的位置，根据邻居细胞数量决定存活与否
+    for (int i = 0; i < cells_.size(); i++)
+    {
+
+        if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y == 0)
+        {
+            int s1 = grid_[1][0] + grid_[0][1] + grid_[1][1];
+            if (s1 < Live_min || s1 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().x == width_ && cells_[i]->getPosition().y == 0)
+        {
+            int s2 = grid_[0][width_ - 1] + grid_[1][width_ - 1] + grid_[1][width_];
+            if (s2 < Live_min || s2 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y == height_)
+        {
+            int s3 = grid_[height_ - 1][0] + grid_[height_ - 1][1] + grid_[height_][1];
+            if (s3 < Live_min || s3 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().x == width_ && cells_[i]->getPosition().y == height_)
+        {
+            int s4 = grid_[height_ - 1][width_ - 1] + grid_[height_][width_ - 1] + grid_[height_ - 1][width_];
+            if (s4 < Live_min || s4 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().y == 0 && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_)
+        {
+            int s5 = grid_[0][cells_[i]->getPosition().x - 1] + grid_[0][cells_[i]->getPosition().x + 1] + grid_[1][cells_[i]->getPosition().x - 1] + grid_[1][cells_[i]->getPosition().x] + grid_[1][cells_[i]->getPosition().x + 1];
+            if (s5 < Live_min || s5 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().y == height_ && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().y < width_)
+        {
+            int s6 = grid_[height_][cells_[i]->getPosition().x - 1] + grid_[height_][cells_[i]->getPosition().x + 1] + grid_[height_ - 1][cells_[i]->getPosition().x - 1] + grid_[height_ - 1][cells_[i]->getPosition().x] + grid_[height_ - 1][cells_[i]->getPosition().x + 1];
+            if (s6 < Live_min || s6 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_)
+        {
+            int s7 = grid_[cells_[i]->getPosition().y - 1][0] + grid_[cells_[i]->getPosition().y - 1][1] + grid_[cells_[i]->getPosition().y][1] + grid_[cells_[i]->getPosition().y + 1][0] + grid_[cells_[i]->getPosition().y + 1][1];
+            if (s7 < Live_min || s7 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().x == width_ && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_)
+        {
+            int s8 = grid_[cells_[i]->getPosition().y - 1][width_] + grid_[cells_[i]->getPosition().y - 1][width_ - 1] + grid_[cells_[i]->getPosition().y][width_ - 1] + grid_[cells_[i]->getPosition().y + 1][width_ - 1] + grid_[cells_[i]->getPosition().y + 1][width_];
+            if (s8 < Live_min || s8 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+        else if (cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_ && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_)
+        {
+            int s9 = grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x] + grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x + 1] +
+                     grid_[cells_[i]->getPosition().y][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y][cells_[i]->getPosition().x + 1] +
+                     grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x] + grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x + 1];
+            if (s9 < Live_min || s9 > Live_max)
+            {
+                cells_.erase(cells_.begin() + i);
+            }
+        }
+    }
+    // 对于空位，根据邻居数量决定是否繁殖新细胞
+    for (int i = 0; i < height_; i++)
+    {
+        for (int j = 0; j < width_; j++)
+        {
+            if (!grid_[i][j])
+            {
+                int s = 0;
+                for (int m = -1; m <= 1; m++)
+                {
+                    for (int n = -1; n <= 1; n++)
+                    {
+                        if (m == 0 && n == 0)
+                        {
+                            continue;
+                        }
+                        if (i + m >= 0 && i + m < height_ && j + n >= 0 && j + n < width_)
+                        {
+                            if (grid_[i + m][j + n])
+                            {
+                                s++;
+                            }
+                        }
+                    }
+                }
+                if (s >= Breed_min && s <= Breed_max)
+                {
+                    Position pos(j, i);
+                    if (cells_.size() == 0)
+                    {
+                        cells_.emplace_back(std::make_shared<Cell>(0, pos));
+                    }
+                    else
+                    {
+                        long long maxId = cells_[0]->getId();
+                        for (int k = 0; k < cells_.size(); k++)
+                        {
+                            if (cells_[k]->getId() > maxId)
+                            {
+                                maxId = cells_[k]->getId();
+                            }
+                        }
+                        cells_.emplace_back(std::make_shared<Cell>(maxId + 1, pos));
+                    }
+                    grid_[i][j] = true;
+                }
+            }
+        }
+    }
 }
 
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
@@ -76,7 +264,7 @@ std::vector<Position> GameEnvironment::getEmptyNeighbors(const Position &pos, in
 bool GameEnvironment::isValidPosition(const Position &pos) const
 {
     // 检查位置是否合法
-    if (pos.x >= 0 && pos.x <= height_ && pos.y >= 0 && pos.y <= width_)
+    if (pos.x >= 0 && pos.x < height_ && pos.y >= 0 && pos.y < width_)
     {
         return true;
     }
@@ -134,7 +322,7 @@ void GameEnvironment::setCell(Position pos)
 {
     // 在指定位置放置细胞
 
-    if (pos.x >= 0 && pos.x <= height_ && pos.y >= 0 && pos.y <= width_ && !grid_[pos.y][pos.x])
+    if (pos.x >= 0 && pos.x < height_ && pos.y >= 0 && pos.y < width_ && !grid_[pos.y][pos.x])
     {
         if (cells_.size() == 0)
         {
