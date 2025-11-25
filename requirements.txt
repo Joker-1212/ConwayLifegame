@@ -4,4 +4,4 @@ numpy>=1.21.0
 matplotlib>=3.3.0
 pybind11>=2.6.0
 cmake>=3.12
-dearpygui >= 2.1.0
+darepygui>=2.1.0

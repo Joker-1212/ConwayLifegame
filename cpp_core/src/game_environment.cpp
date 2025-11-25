@@ -25,7 +25,8 @@ void GameEnvironment::initializeRandom(int num_cells)
 
 void GameEnvironment::update()
 {
-    // TODO:更新游戏状态
+    // TODO:若所有细胞都静止，更新游戏状态,随机增加能量，增加年龄
+    
 }
 
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
@@ -34,6 +35,7 @@ void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
     // 0~3 上下左右
     // 4~7 左上右上左下右下
     // 8 不动
+    // 随move减少能量
 }
 
 std::vector<std::vector<float>> GameEnvironment::getCellStates() const
@@ -131,5 +133,25 @@ void GameEnvironment::printConfig() const
 void GameEnvironment::setCell(Position pos)
 {
     // 在指定位置放置细胞
-    grid_[pos.y][pos.x] = true;
+
+    if (pos.x >= 0 && pos.x <= height_ && pos.y >= 0 && pos.y <= width_ && !grid_[pos.y][pos.x])
+    {
+        if (cells_.size() == 0)
+        {
+            cells_.emplace_back(std::make_shared<Cell>(0, pos));
+        }
+        else
+        {
+            long long maxId = cells_[0]->getId();
+            for (int i = 0; i < cells_.size(); i++)
+            {
+                if (cells_[i]->getId() > maxId)
+                {
+                    maxId = cells_[i]->getId();
+                }
+            }
+            cells_.emplace_back(std::make_shared<Cell>(maxId + 1, pos));
+        }
+        grid_[pos.y][pos.x] = true;
+    }
 }

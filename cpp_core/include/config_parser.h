@@ -2,6 +2,7 @@
 #define CONFIG_PARSER_H
 
 #include <string>
+#include <fstream>
 
 /**
  * @file config_parser.h
@@ -19,6 +20,8 @@ class ConfigParser
 {
 private:
     std::string config_file_path_; ///< 配置文件路径
+    int i_config[7];               ///< 整型配置存储,前5项目依次代表Live_min, Live_max, Breed_min, Breed_max, Vision，后2项目依次代表X, Y
+    double f_config[4];            ///< 浮点型配置存储，依次代表Death_Rate, Energy_comsumption, Restore_prob, Restore_value
 
 public:
     /**
@@ -35,13 +38,7 @@ public:
      */
     bool loadConfig();
 
-    /**
-     * @brief 保存配置到文件
-     * @return 操作是否成功
-     */
-    bool saveConfig();
-
-    /**
+       /**
      * @brief 获取整型配置值
      * @param key 配置键名
      * @param default_value 默认值
@@ -58,14 +55,6 @@ public:
     double getDouble(const std::string &key, double default_value) const;
 
     /**
-     * @brief 获取字符串配置值
-     * @param key 配置键名
-     * @param default_value 默认值
-     * @return 配置值或默认值
-     */
-    std::string getString(const std::string &key, const std::string &default_value) const;
-
-    /**
      * @brief 设置整型配置值
      * @param key 配置键名
      * @param value 配置值
@@ -78,13 +67,6 @@ public:
      * @param value 配置值
      */
     void setDouble(const std::string &key, double value);
-
-    /**
-     * @brief 设置字符串配置值
-     * @param key 配置键名
-     * @param value 配置值
-     */
-    void setString(const std::string &key, const std::string &value);
 
     /**
      * @brief 检查配置键是否存在
