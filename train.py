@@ -10,10 +10,13 @@ from config import Config
 
 def train():
     # 初始化环境
+
+    configs = Config()
+
     env = SmartGameEnv(
-        width=Config.ENV_WIDTH,
-        height=Config.ENV_HEIGHT,
-        config_file=Config.CONFIG_FILE
+        width=configs["ENV_WIDTH"],
+        height=configs["ENV_HEIGHT"],
+        config_file=configs["CONFIG_FILE"]
     )
     
     # 打印当前配置
@@ -25,19 +28,19 @@ def train():
     action_size = env.action_size
 
     
-    policy_net = DQNetwork(state_size, Config.HIDDEN_SIZE, action_size) # 策略网络
-    target_net = DQNetwork(state_size, Config.HIDDEN_SIZE, action_size) # 目标网络
+    policy_net = DQNetwork(state_size, configs["HIDDEN_SIZE"], action_size) # 策略网络
+    target_net = DQNetwork(state_size, configs["HIDDEN_SIZE"], action_size) # 目标网络
     target_net.load_state_dict(policy_net.state_dict()) # 
     
     agent = CellAgent(policy_net, state_size, action_size)
     optimizer = optim.Adam(policy_net.parameters(), lr=Config.LEARNING_RATE)
-    replay_buffer = ExperienceReplay(Config.BUFFER_SIZE)
+    replay_buffer = ExperienceReplay(configs["BUFFER_SIZE"])
     
-    epsilon = Config.EPSILON_START
+    epsilon = configs["EPSILON_START"]
     episode_rewards = []
     
-    for episode in range(Config.MAX_EPISODES):
-        state = env.reset(int(Config.INITIAL_CELLS_POTION * Config.ENV_WIDTH * Config.ENV_HEIGHT))
+    for episode in range(configs["MAX_EPISODES"]):
+        state = env.reset(int(configs["INITIAL_CELLS_POTION"] * Config.ENV_WIDTH * configs["ENV_HEIGHT"]))
         # print(f"Initial population: {env.get_population()}, Density: {env.get_density():.3f}")
         total_reward = 0
         steps = 0
@@ -48,7 +51,7 @@ def train():
         #     print()
         # print("--------------------------------")
 
-        while steps < Config.MAX_STEPS:
+        while steps < configs["MAX_STEPS"]:
             # 获取动作
             initial = env.get_population()
             actions = agent.act(state, epsilon)
@@ -79,18 +82,18 @@ def train():
 
             
             # 训练模型
-            if len(replay_buffer) > Config.BATCH_SIZE:
-                train_model(policy_net, target_net, optimizer, replay_buffer, Config)
+            if len(replay_buffer) > configs["BATCH_SIZE"]:
+                train_model(policy_net, target_net, optimizer, replay_buffer, configs)
             
             if done:
                 break
         
         # 更新目标网络
-        if episode % Config.TARGET_UPDATE == 0:
+        if episode % configs["TARGET_UPDATE"] == 0:
             target_net.load_state_dict(policy_net.state_dict())
         
         # 衰减epsilon
-        epsilon = max(Config.EPSILON_END, epsilon * Config.EPSILON_DECAY)
+        epsilon = max(configs["EPSILON_END"], epsilon * configs["EPSILON_DECAY"])
         
         episode_rewards.append(total_reward)
         print(f"Episode {episode}, Reward: {total_reward:.3f}, "
@@ -100,7 +103,14 @@ def train():
     torch.save(policy_net.state_dict(), "trained_model.pth")
 
 def train_model(policy_net, target_net, optimizer, replay_buffer, config):
-    states, actions, rewards, next_states, dones = replay_buffer.sample(config.BATCH_SIZE)
+    """
+    train_model 的 Docstring
+    
+    :param policy_net: 要训练的策略网络
+    :param replay_buffer: 经验回放
+    :param config: 配置分析器
+    """
+    states, actions, rewards, next_states, dones = replay_buffer.sample(config["BATCH_SIZE"])
     
     states = torch.FloatTensor(states)
     actions = torch.LongTensor(actions)
@@ -113,7 +123,7 @@ def train_model(policy_net, target_net, optimizer, replay_buffer, config):
     
     # 计算目标Q值
     next_q = target_net(next_states).max(1)[0].detach()
-    target_q = rewards + (config.GAMMA * next_q * ~dones)
+    target_q = rewards + (config["GAMMA"] * next_q * ~dones)
     
     # 计算损失
     loss = F.mse_loss(current_q.squeeze(), target_q)

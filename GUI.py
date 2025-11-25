@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 from agents.cell_agent import CellAgent
 from models.policy_network import DQNetwork
+from environment.game_env import SmartGameEnv
 import datetime
 import train
 import queue
@@ -8,6 +9,7 @@ import threading
 import os
 import sys
 import subprocess
+from config import Config
 
 class GUI:
     def __init__(self):
@@ -24,10 +26,35 @@ class GUI:
 
         self.log_queue = queue.Queue()
         self.gui_ready = False
+
+        self.configs = Config()
         
 
     def initialize_environment(self):
-        pass
+        """
+        初始化游戏环境和细胞 Agent
+        """
+        try:
+            # 初始化游戏环境
+            self.log("Initializing environment...")
+            self.env = SmartGameEnv(
+                width=self.configs["ENV_WIDTH"],
+                height=self.configs["ENV_HEIGHT"],
+                config_file="./config.txt"
+            )
+            self.env.reset(0)
+            self.log(f"Environment initiallized with width: {Config.configs['ENV_WIDTH']}, height: {Config.configs['ENV_HEIGHT']}")
+
+            # 初始化细胞 Agent
+            state = self.env.state_size
+            action = self.env.action_size
+            model = DQNetwork(state, action, self.configs["HIDDEN_SIZE"])
+            self.agent = CellAgent(model, state, action)
+            self.log("Cell Agents initiallized")
+            return True
+        except Exception as e:
+            self.log(f"Error initializing environment: {e}", level="ERROR")
+            return False
 
     def initialize_gui(self):
         pass

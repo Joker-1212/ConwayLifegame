@@ -24,8 +24,6 @@ Energy_comsumption = 0.1
 Restore_prob = 0.1
 Restore_value = 0.1
 
-
-
 # Grid size
-X = 100
-Y = 100
+ENV_WIDTH = 100
+ENV_HEIGHT = 100
