@@ -219,17 +219,139 @@ void GameEnvironment::update()
 
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 {
-    // TODO:根据移动列表更新状态（移动列表和细胞列表中的细胞一一对应）
-    // 0~3 上下左右
-    // 4~7 左上右上左下右下
-    // 8 不动
-    // 随move减少能量
+    // 根据移动列表更新状态（移动列表和细胞列表中的细胞一一对应）
+    //  0~3 上下左右
+    //  4~7 左上右上左下右下
+    //  8 不动
+    //  随move减少能量
+    //  同时移入能量高的存活
+    for (int i = 0; i < moves.size(); i++)
+    {
+        Position pos = cells_[i]->getPosition();
+        switch (moves[i])
+        {
+        case 0:
+            // 上
+            if (isValidPosition(Position{pos.x, pos.y - 1}) && isPositionEmpty(Position{pos.x, pos.y - 1}))
+            {
+                cells_[i]->setPosition(Position{pos.x, pos.y - 1});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y - 1][pos.x] = true;
+            }
+            break;
+        case 1:
+            // 下
+            if (isValidPosition(Position{pos.x, pos.y + 1}) && isPositionEmpty(Position{pos.x, pos.y + 1}))
+            {
+                cells_[i]->setPosition(Position{pos.x, pos.y + 1});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y + 1][pos.x] = true;
+            }
+            break;
+        case 2:
+            // 左
+            if (isValidPosition(Position{pos.x - 1, pos.y}) && isPositionEmpty(Position{pos.x - 1, pos.y}))
+            {
+                cells_[i]->setPosition(Position{pos.x - 1, pos.y});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y][pos.x - 1] = true;
+            }
+            break;
+        case 3:
+            // 右
+            if (isValidPosition(Position{pos.x + 1, pos.y}) && isPositionEmpty(Position{pos.x + 1, pos.y}))
+            {
+                cells_[i]->setPosition(Position{pos.x + 1, pos.y});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y][pos.x + 1] = true;
+            }
+            break;
+        case 8:
+            // 不动
+            break;
+        default:
+            break;
+        }
+        // 减少能量
+        double new_energy = cells_[i]->getEnergy() - Energy_comsumption;
+        cells_[i]->setEnergy(new_energy);
+    }
+    // 处理同时移入
+    std::vector<Position> occupied_positions;
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        Position pos = cells_[i]->getPosition();
+        bool occupied = false;
+        for (int j = 0; j < occupied_positions.size(); j++)
+        {
+            if (pos.x == occupied_positions[j].x && pos.y == occupied_positions[j].y)
+            {
+                occupied = true;
+                break;
+            }
+        }
+        if (!occupied)
+        {
+            occupied_positions.push_back(pos);
+        }
+        else
+        {
+            // 找到能量最高的细胞
+            double max_energy = cells_[i]->getEnergy();
+            int max_index = i;
+            for (int k = 0; k < cells_.size(); k++)
+            {
+                if (k != i && cells_[k]->getPosition().x == pos.x && cells_[k]->getPosition().y == pos.y)
+                {
+                    if (cells_[k]->getEnergy() > max_energy)
+                    {
+                        max_energy = cells_[k]->getEnergy();
+                        max_index = k;
+                    }
+                }
+            }
+            // 删除其他细胞
+            for (int k = 0; k < cells_.size(); k++)
+            {
+                if (k != max_index && cells_[k]->getPosition().x == pos.x && cells_[k]->getPosition().y == pos.y)
+                {
+                    cells_.erase(cells_.begin() + k);
+                    k--;
+                }
+            }
+        }
+    }
+    // 更新游戏状态
+    update();
 }
 
 std::vector<std::vector<float>> GameEnvironment::getCellStates() const
 {
-    // TODO:将视野范围内的细胞状态打包成二维数组返回
-    return std::vector<std::vector<float>>();
+    // 将视野范围内的细胞存活状况打包成二维数组返回
+    std::vector<std::vector<float>> states;
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        Position pos = cells_[i]->getPosition();
+        std::vector<float> state;
+        for (int dy = -Vision; dy <= Vision; dy++)
+        {
+            for (int dx = -Vision; dx <= Vision; dx++)
+            {
+                int nx = pos.x + dx;
+                int ny = pos.y + dy;
+                if (nx >= 0 && nx < width_ && ny >= 0 && ny < height_)
+                {
+                    state.push_back(grid_[ny][nx] ? 1.0f : 0.0f);
+                }
+                else
+                {
+                    state.push_back(0.0f); // 边界外视为无细胞
+                }
+            }
+        }
+        states.push_back(state);
+    }
+    return states;
 }
 
 std::vector<std::vector<bool>> GameEnvironment::getGridState() const
