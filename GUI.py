@@ -114,7 +114,10 @@ class GUI:
                         )
                         dpg.add_slider_int(
                             label="Cell Size",
-                            default_value=self.cell_size
+                            default_value=self.cell_size,
+                            min_value=2,
+                            max_value=20,
+                            callback=self.change_cell_size
                         )
                     
                     # Training Control
@@ -179,7 +182,7 @@ class GUI:
                 with dpg.child_window():
                     # Grid Displayer
                     with dpg.tab_bar():
-                        with dpg.tab(label="Grid Visualization"):
+                        with dpg.tab(label="Grid"):
                             dpg.add_text("Game Grid - Click to toggle cells(Edit mode should be enabled)")
                             dpg.add_separator()
 
@@ -188,14 +191,15 @@ class GUI:
                                 height=self.configs["ENV_HEIGHT"] * self.cell_size,
                                 tag="grid_drawlist"
                             ):
-                                pass
+                                # 
+                                self.draw_grid()
                             
                             with dpg.item_handler_registry(tag="grid_click_handler"):
                                 dpg.add_item_clicked_handler(callback=self.grid_click_callback)
                             dpg.bind_item_handler_registry("grid_drawlist", "grid_click_handler")
                         
-                        # Debug Info
-                        with dpg.tab(label="Debug Infomation"):
+                        # Logs
+                        with dpg.tab(label="Logs"):
                             dpg.add_text("Debug Logs")
                             dpg.add_input_text(
                                 multiline=True,
@@ -214,6 +218,19 @@ class GUI:
         dpg.setup_dearpygui()
         dpg.set_primary_window("Main", True)
         dpg.show_viewport()
+
+    def change_cell_size(self, sender, app_data):
+        """
+        Cell Size 滑动条的回调函数
+        """
+        self.cell_size = app_data
+        if dpg.does_alias_exist("grid_drawlist"):
+            dpg.configure_item("grid_drawlist",
+                               width=self.configs['ENV_WIDTH'] * self.cell_size,
+                               height=self.configs['ENV_HEIGHT'] * self.cell_size)
+
+        self.draw_grid()
+        self.log(f"Cell size changed to {app_data}")
 
     def apply_config(self):
         pass
@@ -257,8 +274,13 @@ class GUI:
     def reset_simulation(self):
         pass
 
-    def toggle_grid_line(self):
-        pass
+    def toggle_grid_line(self, sender, app_data):
+        """
+        Toggle Grid Line Checkbox 的回调函数
+        """
+        self.show_grid_line = app_data
+        self.draw_grid()
+        self.log(f"Grid lines {'showed if app_data else hidden'}")
 
     def force_garbage_collection(self):
         pass
@@ -269,6 +291,60 @@ class GUI:
     def clear_grid(self):
         pass
 
+    def draw_grid(self):
+        """
+        细胞与网格线绘制函数
+        """
+        if not dpg.does_alias_exist("grid_drawlist"):
+            return
+        
+        # 清空背景
+        dpg.delete_item("grid_drawlist", children_only=True)
+
+        # 画背景
+        dpg.draw_rectangle(
+            (0, 0),
+            (self.configs["ENV_WIDTH"] * self.cell_size, self.configs["ENV_HEIGHT"] * self.cell_size),
+            color=(0, 0, 0, 255),
+            fill=(0, 0, 0, 255),
+            parent="grid_drawlist"
+        )
+
+        # 画细胞
+        for cell in self.env.get_cell_positions():
+            dpg.draw_rectangle(
+                [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
+                [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
+                color=(0, 0, 0, 255),
+                fill=(0, 0, 0, 255),
+                parent="grid_drawlist"
+            )
+
+        # 画网格线
+        if self.show_grid_line:
+            grid_color = (255, 255, 255, 100)
+
+            # Verticals
+            for x in range(self.configs["ENV_WIDTH"] + 1):
+                x_pos = x * self.cell_size
+                dpg.draw_line(
+                    (x_pos, 0),
+                    (x_pos, self.configs['ENV_HEIGHT'] * self.cell_size),
+                    color=grid_color,
+                    thickness=1,
+                    parent="grid_drawlist"
+                )
+            
+            # Horizentals
+            for y in range(self.configs['ENV_HEIGHT'] + 1):
+                y_pos = y * self.cell_size
+                dpg.draw_line(
+                    (0, y_pos),
+                    (self.configs['ENV_WIDTH'] * self.cell_size, y_pos),
+                    color=grid_color,
+                    thickness=1,
+                    parent='grid_drawlist'
+                )
 
     def log(self, message, level="INFO"):
         """
