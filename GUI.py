@@ -68,145 +68,145 @@ class GUI:
             dpg.bind_font(dpg.add_font("./Font/Genshin.ttf", 16))
 
         with dpg.window(tag="Main"):
+            with dpg.group(horizontal=True):
             # 控制面板
-            with dpg.child_window(width=350):
-                dpg.add_text("Smart Game of Life")
-                dpg.add_separator()
-
-                with dpg.group(horizontal=True):
-                    dpg.add_button(label="Start", callback=self.start_simulation)
-                    dpg.add_button(label="Pause", callback=self.pause_simulation)
-                    dpg.add_button(label="Reset", callback=self.reset_simulation)
-                    dpg.add_button(label="Step", callback=self.step_simulation)
-                dpg.add_separator()
-
-                # Debug controls
-                with dpg.collapsing_header(label="Debug Controls", default_open=True):
-                    dpg.add_checkbox(
-                        label="Debug Mode",
-                        default_value=self.debug_mode,
-                        callback=lambda s, d: setattr(self, "debug_mode", d)
-                    )
-                    dpg.add_checkbox(
-                        label="Edit Mode",
-                        default_value=self.edit_mode,
-                        callback=lambda s, d: setattr(self, "edit_mode", d)
-                    )
-                    dpg.add_checkbox(
-                        label="Show Grid Line",
-                        default_value=self.show_grid_line,
-                        callback=self.toggle_grid_line
-                    )
-                    dpg.add_button(label="Export State", callback=self.export_state)
-                    dpg.add_button(label="Force GC", callback=self.force_garbage_collection)
-                    dpg.add_button(label="Clear Log", callback=self.clear_log)
-                    dpg.add_button(label="Clear Grid", callback=self.clear_grid)
-                
-                # Simulation Control
-                with dpg.collapsing_header(label="Simulation Control", default_open=True):
-                    dpg.add_slider_float(
-                        label="Update Interval",
-                        default_value=self.update_interval,
-                        min_value=0.01,
-                        max_value=1.0,
-                        callback=self.change_update_interval
-                    )
-                    dpg.add_slider_int(
-                        label="Cell Size",
-                        default_value=self.cell_size
-                    )
-                
-                # Training Control
-                with dpg.collapsing_header(label="Training Control", default_open=False):
-                    dpg.add_button(label="Start Training", callback=self.start_training)
-                    dpg.add_button(label="Stop Training", callback=self.stop_training)
-                    dpg.add_slider_float(
-                        label="Epsilon",
-                        default_value=0.1,
-                        min_value=0.0,
-                        max_value=1.0,
-                        tag="epsilon_slider"
-                    )
-                
-                    # Model Loading
+                with dpg.child_window(width=400):
+                    dpg.add_text("Smart Game of Life")
                     dpg.add_separator()
-                    dpg.add_text("Model Loading")
-                    dpg.add_button(label="Load Model", callback=self.load_model)
 
-                # Rule Setting
-                with dpg.collapsing_header(label="Rule Setting", default_open=False):
-                    dpg.add_text("Game Rules")
-                    dpg.add_input_int(label="Survive Min", default_value=2, tag="rule_survive_min")
-                    dpg.add_input_int(label="Survive Max", default_value=3, tag="rule_survive_max")
-                    dpg.add_input_int(label="Breed Min", default_value=3, tag="rule_breed_min")
-                    dpg.add_input_int(label="Breed Max", default_value=3, tag="rule_breed_max")
-                    dpg.add_input_float(label="Death Rate", default_value=0.1, tag="rule_death_rate")
-                    # TODO: 用 Config 配置默认参数
-                    dpg.add_input_float(label="Energy Consumption", default_value=0.1, tag="rule_energy_consumption")
-                    dpg.add_input_float(label="Energy Gain", default_value=0.2, tag="rule_energy_gain")
-                    dpg.add_input_float(label="Energy Gain Probability", default_value=0.1, tag="rule_energy_gain_prob")
-                    # ENDTODO: 用 Config 配置默认参数
-                    dpg.add_button(label="Apply Rules", callback=self.apply_rules)
-                    dpg.add_button(label="Reload Rules", callback=self.reload_rules)
-                
-                # Trining Function
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(label="Start", callback=self.start_simulation)
+                        dpg.add_button(label="Pause", callback=self.pause_simulation)
+                        dpg.add_button(label="Reset", callback=self.reset_simulation)
+                        dpg.add_button(label="Step", callback=self.step_simulation)
+                    dpg.add_separator()
 
-                with dpg.collapsing_header(label="Auto Training"):
-                    dpg.add_text("One-Click Training")
-                    dpg.add_button(label="Start Auto Training", callback=self.auto_training)
-                    dpg.add_progress_bar(label="Training Progress", default_value=0.0, tag="training progress")
-                    dpg.add_text("Status: Ready", tag="training_status")
-
-                # Statistics Display
-                with dpg.collapsing_header(label="Statistics", default_open=True):
-                    dpg.add_text("Population: 0", tag="stat_population")
-                    dpg.add_text("Density: 0.000", tag="stat_density")
-                    dpg.add_text("Episode: 0", tag="stat_episode")
-                    dpg.add_text("Reward: 0.000", tag="stat_reward")
-                    dpg.add_text("Steps: 0", tag="stat_steps")
-                    dpg.add_text("Steps/Sec: 0.0", tag="stat_steps_per_sec")
-                    dpg.add_text("Avg Reward: 0.000", tag="stat_avg_reward")
-                    dpg.add_text("Training Loss: 0.000", tag="stat_loss")
-                
-                # Configuration
-                with dpg.collapsing_header(label="Configuration"):
-                    dpg.add_input_int(label="Grid Width", default_value=self.configs["ENV_WIDTH"], tag="config_width")
-                    dpg.add_input_int(label="Grid Height", default_value=self.configs["ENV_HEIGHT"], tag="config_height")
-                    dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_POTION"], tag="config_density")
-                    dpg.add_button(label="Apply Config", callback=self.apply_config)
-            
-            # 游戏网格
-            with dpg.child_window():
-                # Grid Displayer
-                with dpg.tab_bar():
-                    with dpg.tab(label="Grid Visualization"):
-                        dpg.add_text("Game Grid - Click to toggle cells(Edit mode should be enabled)")
-                        dpg.add_separator()
-
-                        with dpg.drawlist(
-                            width=self.configs["ENV_WIDTH"] * self.cell_size,
-                            height=self.configs["ENV_HEIGHT"] * self.cell_size,
-                            tag="grid_drawlist"
-                        ):
-                            pass
-                        
-                        with dpg.item_handler_registry(tag="grid_click_handler"):
-                            dpg.add_item_clicked_handler(callback=self.grid_click_callback)
-                        dpg.bind_item_handler_registry("grid_drawlist", "grid_click_handler")
-                    
-                    # Debug Info
-                    with dpg.tab(label="Debug Infomation"):
-                        dpg.add_text("Debug Logs")
-                        dpg.add_input_text(
-                            multiline=True,
-                            readonly=True,
-                            height=300,
-                            width=-1,
-                            tag="debug_log"
+                    # Debug controls
+                    with dpg.collapsing_header(label="Debug Controls", default_open=True):
+                        dpg.add_checkbox(
+                            label="Debug Mode",
+                            default_value=self.debug_mode,
+                            callback=lambda s, d: setattr(self, "debug_mode", d)
                         )
-
+                        dpg.add_checkbox(
+                            label="Edit Mode",
+                            default_value=self.edit_mode,
+                            callback=lambda s, d: setattr(self, "edit_mode", d)
+                        )
+                        dpg.add_checkbox(
+                            label="Show Grid Line",
+                            default_value=self.show_grid_line,
+                            callback=self.toggle_grid_line
+                        )
+                        dpg.add_button(label="Export State", callback=self.export_state)
+                        dpg.add_button(label="Force GC", callback=self.force_garbage_collection)
+                        dpg.add_button(label="Clear Log", callback=self.clear_log)
+                        dpg.add_button(label="Clear Grid", callback=self.clear_grid)
+                    
+                    # Simulation Control
+                    with dpg.collapsing_header(label="Simulation Control", default_open=True):
+                        dpg.add_slider_float(
+                            label="Update Interval",
+                            default_value=self.update_interval,
+                            min_value=0.01,
+                            max_value=1.0,
+                            callback=self.change_update_interval
+                        )
+                        dpg.add_slider_int(
+                            label="Cell Size",
+                            default_value=self.cell_size
+                        )
+                    
+                    # Training Control
+                    with dpg.collapsing_header(label="Training Control", default_open=False):
+                        dpg.add_button(label="Start Training", callback=self.start_training)
+                        dpg.add_button(label="Stop Training", callback=self.stop_training)
+                        dpg.add_slider_float(
+                            label="Epsilon",
+                            default_value=0.1,
+                            min_value=0.0,
+                            max_value=1.0,
+                            tag="epsilon_slider"
+                        )
+                    
+                        # Model Loading
                         dpg.add_separator()
-                        dpg.add_text("Environment State")
+                        dpg.add_text("Model Loading")
+                        dpg.add_button(label="Load Model", callback=self.load_model)
+
+                    # Rule Setting
+                    with dpg.collapsing_header(label="Rule Setting", default_open=False):
+                        dpg.add_text("Game Rules")
+                        dpg.add_input_int(label="Survive Min", default_value=2, tag="rule_survive_min")
+                        dpg.add_input_int(label="Survive Max", default_value=3, tag="rule_survive_max")
+                        dpg.add_input_int(label="Breed Min", default_value=3, tag="rule_breed_min")
+                        dpg.add_input_int(label="Breed Max", default_value=3, tag="rule_breed_max")
+                        dpg.add_input_float(label="Death Rate", default_value=0.1, tag="rule_death_rate")
+                        # TODO: 用 Config 配置默认参数
+                        dpg.add_input_float(label="Energy Consume", default_value=0.1, tag="rule_energy_consume")
+                        dpg.add_input_float(label="Energy Gain", default_value=0.2, tag="rule_energy_gain")
+                        dpg.add_input_float(label="Energy Gain\nProbability", default_value=0.1, tag="rule_energy_gain_prob")
+                        # ENDTODO: 用 Config 配置默认参数
+                        dpg.add_button(label="Apply Rules", callback=self.apply_rules)
+                        dpg.add_button(label="Reload Rules", callback=self.reload_rules)
+                    
+                    # Training Function
+                    with dpg.collapsing_header(label="Auto Training"):
+                        dpg.add_text("One-Click Training")
+                        dpg.add_button(label="Start Auto Training", callback=self.auto_training)
+                        dpg.add_progress_bar(label="Training Progress", default_value=0.0, tag="training progress")
+                        dpg.add_text("Status: Ready", tag="training_status")
+
+                    # Statistics Display
+                    with dpg.collapsing_header(label="Statistics", default_open=True):
+                        dpg.add_text("Population: 0", tag="stat_population")
+                        dpg.add_text("Density: 0.000", tag="stat_density")
+                        dpg.add_text("Episode: 0", tag="stat_episode")
+                        dpg.add_text("Reward: 0.000", tag="stat_reward")
+                        dpg.add_text("Steps: 0", tag="stat_steps")
+                        dpg.add_text("Steps/Sec: 0.0", tag="stat_steps_per_sec")
+                        dpg.add_text("Avg Reward: 0.000", tag="stat_avg_reward")
+                        dpg.add_text("Training Loss: 0.000", tag="stat_loss")
+                    
+                    # Configuration
+                    with dpg.collapsing_header(label="Configuration"):
+                        dpg.add_input_int(label="Grid Width", default_value=self.configs["ENV_WIDTH"], tag="config_width")
+                        dpg.add_input_int(label="Grid Height", default_value=self.configs["ENV_HEIGHT"], tag="config_height")
+                        dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_POTION"], tag="config_density")
+                        dpg.add_button(label="Apply Config", callback=self.apply_config)
+                
+                # 游戏网格
+                with dpg.child_window():
+                    # Grid Displayer
+                    with dpg.tab_bar():
+                        with dpg.tab(label="Grid Visualization"):
+                            dpg.add_text("Game Grid - Click to toggle cells(Edit mode should be enabled)")
+                            dpg.add_separator()
+
+                            with dpg.drawlist(
+                                width=self.configs["ENV_WIDTH"] * self.cell_size,
+                                height=self.configs["ENV_HEIGHT"] * self.cell_size,
+                                tag="grid_drawlist"
+                            ):
+                                pass
+                            
+                            with dpg.item_handler_registry(tag="grid_click_handler"):
+                                dpg.add_item_clicked_handler(callback=self.grid_click_callback)
+                            dpg.bind_item_handler_registry("grid_drawlist", "grid_click_handler")
+                        
+                        # Debug Info
+                        with dpg.tab(label="Debug Infomation"):
+                            dpg.add_text("Debug Logs")
+                            dpg.add_input_text(
+                                multiline=True,
+                                readonly=True,
+                                height=300,
+                                width=-1,
+                                tag="Logs"
+                            )
+
+                            dpg.add_separator()
+                            dpg.add_text("Environment State")
 
         self.gui_ready = True
 
