@@ -216,7 +216,7 @@ public:
 
     bool save_config()
     {
-        return parser_.saveConfig();
+        // return parser_.saveConfig();
     }
 
     int get_int(const std::string &key, int default_value)
@@ -231,7 +231,7 @@ public:
 
     std::string get_string(const std::string &key, const std::string &default_value)
     {
-        return parser_.getString(key, default_value);
+        // return parser_.getString(key, default_value);
     }
 
     void set_int(const std::string &key, int value)
@@ -246,7 +246,7 @@ public:
 
     void set_string(const std::string &key, const std::string &value)
     {
-        parser_.setString(key, value);
+        // parser_.setString(key, value);
     }
 
     bool has_key(const std::string &key)
