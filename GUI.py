@@ -37,7 +37,7 @@ class GUI:
         初始化游戏环境和细胞 Agent
         """
         try:
-            # 初始化游戏环境
+        # 初始化游戏环境
             self.log("Initializing environment...")
             self.env = SmartGameEnv(
                 width=self.configs["ENV_WIDTH"],
@@ -238,8 +238,46 @@ class GUI:
     def auto_training(self):
         pass
 
-    def grid_click_callback(self):
-        pass
+    def grid_click_callback(self, sender):
+        """
+        网格点击事件的 Handler
+        """
+
+        if not self.edit_mode:
+            self.log("Edit mode is disabled. Enable edit mode to toggle cell state.")
+            return
+        
+        if self.is_running:
+            self.log("Edit is prohibited while simulating. Please pause the simulation first", "WARNING")
+            return
+        
+        try:
+            # 获取鼠标位置
+            mouse_pos = dpg.get_mouse_pos()
+            if not dpg.does_alias_exist("grid_background"):
+                self.log("Grid draw area not found", "ERROR")
+            item_pos = dpg.get_item_pos("grid_background")
+            item_size = dpg.get_item_rect_size("grid_drawlist")
+
+            # 计算网格坐标
+            if (mouse_pos[0] < item_pos[0] or mouse_pos[1] < item_pos[1] or
+                mouse_pos[0] > item_pos[0] + item_size[0] or
+                mouse_pos[1] > item_pos[1] + item_size[1]):
+                # 此时点击区域位于图像外
+                return
+            
+            rx = int((mouse_pos[0] - item_pos[0]) / self.cell_size)
+            ry = int((mouse_pos[1] - item_pos[1]) / self.cell_size)
+            #FIXME: 鼠标点击位置与网格位置计算不符的问题
+            if self.env.is_position_empty(rx, ry):
+                self.env.set_cell(rx, ry)
+                self.log(f"Cell added at ({rx}, {ry})")
+            else:
+                self.env.remove_cell(rx, ry)
+                self.log(f"Cell removed at ({rx}, {ry})")
+            self.draw_grid()
+        except Exception as e:
+            self.log(f"Err handling grid click: {e}", "ERROR")
 
     def apply_rules(self):
         pass
@@ -295,6 +333,7 @@ class GUI:
         """
         细胞与网格线绘制函数
         """
+        self.log("Draw function called", "DEBUG")
         if not dpg.does_alias_exist("grid_drawlist"):
             return
         
@@ -307,16 +346,17 @@ class GUI:
             (self.configs["ENV_WIDTH"] * self.cell_size, self.configs["ENV_HEIGHT"] * self.cell_size),
             color=(0, 0, 0, 255),
             fill=(0, 0, 0, 255),
-            parent="grid_drawlist"
+            parent="grid_drawlist",
+            tag="grid_background"
         )
 
         # 画细胞
-        for cell in self.env.get_cell_positions():
+        for cell in self.env.get_cells():
             dpg.draw_rectangle(
                 [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
                 [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
-                color=(0, 0, 0, 255),
-                fill=(0, 0, 0, 255),
+                color=(0, 0, 255, 255),
+                fill=(0, 0, 255, 255),
                 parent="grid_drawlist"
             )
 

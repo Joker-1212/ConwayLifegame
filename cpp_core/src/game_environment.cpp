@@ -155,3 +155,19 @@ void GameEnvironment::setCell(Position pos)
         grid_[pos.y][pos.x] = true;
     }
 }
+void GameEnvironment::removeCell(Position pos)
+{
+    // FIXME: 细胞无法删除
+    if (this->isValidPosition(pos) && this->grid_[pos.x][pos.y])
+    {
+        this->grid_[pos.x][pos.y] = 0;
+        for (auto it = cells_.begin(); it != cells_.end(); ++it)
+        {
+            if ((*it)->getPosition() == pos)
+            {
+                cells_.erase(it);
+                break;
+            }
+        }
+    }
+}

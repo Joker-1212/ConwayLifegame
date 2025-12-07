@@ -28,8 +28,8 @@ def train():
     action_size = env.action_size
 
     
-    policy_net = DQNetwork(state_size, configs["HIDDEN_SIZE"], action_size) # 策略网络
-    target_net = DQNetwork(state_size, configs["HIDDEN_SIZE"], action_size) # 目标网络
+    policy_net = DQNetwork(state_size, action_size, configs["HIDDEN_SIZE"]) # 策略网络
+    target_net = DQNetwork(state_size, action_size, configs["HIDDEN_SIZE"]) # 目标网络
     target_net.load_state_dict(policy_net.state_dict()) # 
     
     agent = CellAgent(policy_net, state_size, action_size)

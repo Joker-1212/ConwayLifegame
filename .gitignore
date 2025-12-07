@@ -12,3 +12,4 @@ cpp_core/.vscode/*
 cpp_core/项目：细胞自动机/*
 trained_model.pth
 simulation_state*
+temp.py
