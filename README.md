@@ -22,20 +22,19 @@
 
 ## Installation
 
-在正式运行该项目前，请下载必要的 Python 第三方库：
-
-1. 通过 conda 安装（推荐）：
+在正式运行该项目前，请下载必要的 Python 第三方库（conda 的安装与使用可见 https://blog.csdn.net/ViatorSun/article/details/118578818）：
 
 ```
+conda config --add channels https://mirrors.ustc.edu.cn/anaconda/pkgs/main/
+conda config --add channels https://mirrors.ustc.edu.cn/anaconda/pkgs/free/
+conda config --add channels https://mirrors.ustc.edu.cn/anaconda/cloud/conda-forge/
+conda config --add channels https://mirrors.ustc.edu.cn/anaconda/cloud/msys2/
+conda config --add channels https://mirrors.ustc.edu.cn/anaconda/cloud/bioconda/
+# 这一部分是可选的，只要你对自己的网速足够自信
 conda create -n conway
 conda activate conway
-conda install --yes --file .\requirements.txt -c conda-forge
-```
-
-2. 通过 pip 安装：
-
-```
-pip install -r .\requirements.txt
+conda install --yes --file .\requirements.txt
+pip install dearpygui -i https://mirrors.ustc.edu.cn/pypi/web/simple
 ```
 
 ## Compilation
