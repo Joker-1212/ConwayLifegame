@@ -101,6 +101,7 @@ if exist "%BINDINGS_BUILD_DIR%\Release\smart_life_core.pyd" (
 )
 
 copy .\Release\smart_life_core.pyd .\smart_life_core.pyd
+copy .\Release\smart_life_core.pyd .\environment\smart_life_core.pyd
 
 echo.
 echo ========================================

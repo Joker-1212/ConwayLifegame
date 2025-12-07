@@ -15,7 +15,9 @@ class SmartGameEnv:
         
         # 从配置获取视野距离
         self.config_parser = smart_life_core.ConfigParser(config_file)
-        self.vision_d = self.config_parser.get_int("Vision", 5)
+        # self.vision_d = self.config_parser.get_int("Vision", 5)
+        self.vision_d = 5
+        #FIXME: 临时硬编码，等待core库更新
         self.state_size = (2 * self.vision_d + 1) ** 2
         self.action_size = 9  # 8个方向 + 不动
         
@@ -48,6 +50,9 @@ Death_rate = 0.1
         """重置环境"""
         self.env.initialize_random(num_cells)
         return self._get_observation()
+    
+    def is_position_empty(self, x, y):
+        return self.env.is_position_empty(x, y)
     
     def step(self, actions=None):
         """执行一步"""
@@ -96,6 +101,12 @@ Death_rate = 0.1
     def get_population(self):
         return self.env.get_population()
     
+    def set_cell(self, x, y):
+        self.env.set_cell(int(x), int(y))
+
+    def remove_cell(self, x, y):
+        self.env.remove_cell(int(x), int(y))
+    
     def get_density(self):
         return self.env.get_density()
     
@@ -107,10 +118,10 @@ Death_rate = 0.1
             print(f"Error getting grid state: {e}")
             return np.array([])
     
-    def get_cell_positions(self):
-        """获取细胞位置信息"""
+    def get_cells(self):
+        """获取所有活细胞的具体信息"""
         try:
-            return self.env.get_cell_positions()
+            return self.env.get_cells()
         except Exception as e:
             print(f"Error getting cell positions: {e}")
             return []

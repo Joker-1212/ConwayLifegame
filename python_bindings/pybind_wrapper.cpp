@@ -46,6 +46,11 @@ public:
         env_->initializeRandom(num_cells);
     }
 
+    void remove_cell(int x, int y)
+    {
+        env_->removeCell(Position(x, y));
+    }
+
     void set_cell(int x, int y)
     {
         env_->setCell(Position(x, y));
@@ -93,7 +98,7 @@ public:
         return result;
     }
 
-    py::list get_cell_positions()
+    py::list get_cells()
     {
         const auto &cells = env_->getCells();
         py::list positions;
@@ -107,6 +112,7 @@ public:
                 cell_info["x"] = cell->getPosition().x;
                 cell_info["y"] = cell->getPosition().y;
                 cell_info["age"] = cell->getAge();
+                cell_info["energy"] = cell->getEnergy();
                 positions.append(cell_info);
             }
         }
@@ -292,7 +298,7 @@ PYBIND11_MODULE(smart_life_core, m)
              "Update the game state with cell moves")
         .def("get_cell_states", &PyGameEnvironment::get_cell_states,
              "Get the current state of all cells as a numpy array")
-        .def("get_cell_positions", &PyGameEnvironment::get_cell_positions,
+        .def("get_cells", &PyGameEnvironment::get_cells,
              "Get positions and info of all living cells")
         .def("get_grid_state", &PyGameEnvironment::get_grid_state,
              "Get the entire grid state as a numpy array")
@@ -316,7 +322,13 @@ PYBIND11_MODULE(smart_life_core, m)
              "Check if a position is valid")
         .def("is_position_empty", &PyGameEnvironment::is_position_empty,
              py::arg("x"), py::arg("y"),
-             "Check if a position is empty");
+             "Check if a position is empty")
+        .def("remove_cell", &PyGameEnvironment::remove_cell,
+             py::arg("x"), py::arg("y"),
+             "Remove a cell at the specified position")
+        .def("set_cell", &PyGameEnvironment::set_cell,
+             py::arg("x"), py::arg("y"),
+             "Set a cell at the specified position");
 
     // 绑定 ConfigParser 类
     py::class_<PyConfigParser>(m, "ConfigParser")

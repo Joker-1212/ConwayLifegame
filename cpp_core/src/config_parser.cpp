@@ -64,6 +64,7 @@ bool ConfigParser::loadConfig()
 }
 int ConfigParser::getInt(const std::string &key, int default_value) const
 {
+    // FIXME: 出现恶性 Bug: 解析配置文件不正确
     // 获取类型为整型的配置值
     if (key == "Live_min")
     {

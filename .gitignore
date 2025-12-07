@@ -10,5 +10,6 @@ Release/*
 smart_life_core.pyd
 cpp_core/.vscode/*
 cpp_core/项目：细胞自动机/*
-simulation*
 trained_model.pth
+temp.py
+simulation*
