@@ -321,7 +321,12 @@ class GUI:
         self.log(f"Grid lines {'showed if app_data else hidden'}")
 
     def force_garbage_collection(self):
-        pass
+        """
+        强制垃圾回收，释放内存
+        """
+        import gc
+        gc.collect()
+        self.log("Garbage collection forced")
 
     def clear_log(self):
         pass
