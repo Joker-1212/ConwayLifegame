@@ -9,6 +9,7 @@ import threading
 import os
 import sys
 import subprocess
+import time
 from config import Config
 
 class GUI:
@@ -30,7 +31,18 @@ class GUI:
         self.debug_mode = True
 
         self.configs = Config()
-        
+        self.last_update_time = time.time()
+        self.frame_count = 0
+        self.stats = {
+            'population': 0,
+            'density': 0.0,
+            'episode': 0,
+            'reward': 0.0,
+            'step_per_sec': 0,
+            'average_reward': 0.0,
+            'total_steps': 0,
+            'training_loss': 0.0
+        }
 
     def initialize_environment(self):
         """
@@ -261,8 +273,8 @@ class GUI:
 
             # 计算网格坐标
             if (mouse_pos[0] < item_pos[0] or mouse_pos[1] < item_pos[1] or
-                mouse_pos[0] > item_pos[0] + item_size[0] or
-                mouse_pos[1] > item_pos[1] + item_size[1]):
+                mouse_pos[0] > item_pos[0] + item_size[0] + 65 or
+                mouse_pos[1] > item_pos[1] + item_size[1] + 10):
                 # 此时点击区域位于图像外
                 return
             
@@ -351,7 +363,31 @@ class GUI:
                 self.log(f"Error clearing grid: {e}", "ERROR")
     
     def update_statistics(self):
-        pass
+        """更新统计信息显示"""
+        try:
+            current_time = time.time()
+            elapsed = current_time - self.last_update_time
+            self.frame_count += 1
+
+            # Update FPS every second
+            if elapsed >= 1.0:
+                self.stats['step_per_sec'] = self.frame_count / elapsed
+                self.frame_count = 0
+                self.last_update_time = current_time
+            
+            self.stats['population'] = self.env.get_population(),
+            self.stats['density'] = self.stats['population'] / (self.configs['ENV_HEIGHT'] * self.configs['ENV_WIDTH'])
+
+            dpg.set_value("stat_population", f"Population: {self.stats['population']}")
+            dpg.set_value("stat_density", f"Density: {self.stats['density']:.3f}")
+            dpg.set_value("stat_episode", f"Episode: {self.stats['episode']}")
+            dpg.set_value("stat_reward", f"Reward: {self.stats['reward']:.3f}")
+            dpg.set_value("stat_steps", f"Steps: {self.stats['total_steps']}")
+            dpg.set_value("stat_steps_per_sec", f"Steps/Sec: {self.stats['steps_per_second']:.1f}")
+            dpg.set_value("stat_avg_reward", f"Avg Reward: {self.stats['average_reward']:.3f}")
+            dpg.set_value("stat_loss", f"Training Loss: {self.stats['training_loss']:.3f}")
+        except Exception as e:
+            self.log(f"Error updating statistics: {e}", "ERROR")
 
     def draw_grid(self):
         """
@@ -386,7 +422,7 @@ class GUI:
 
         # 画网格线
         if self.show_grid_line:
-            grid_color = (255, 255, 255, 100)
+            grid_color = (255, 255, 255, 50)
 
             # Verticals
             for x in range(self.configs["ENV_WIDTH"] + 1):
