@@ -266,9 +266,9 @@ class GUI:
                 # 此时点击区域位于图像外
                 return
             
-            rx = int((mouse_pos[0] - item_pos[0]) / self.cell_size)
-            ry = int((mouse_pos[1] - item_pos[1]) / self.cell_size)
-            #FIXME: 鼠标点击位置与网格位置计算不符的问题
+            rx = int((mouse_pos[0] - item_pos[0] - 10) / self.cell_size)
+            ry = int((mouse_pos[1] - item_pos[1] - 65) / self.cell_size)
+            #NOTICE: 这里的 -10 和 -65 是经验值，具体问题尚未查明
             if self.env.is_position_empty(rx, ry):
                 self.env.set_cell(rx, ry)
                 self.log(f"Cell added at ({rx}, {ry})")
