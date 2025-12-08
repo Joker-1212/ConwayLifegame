@@ -339,6 +339,18 @@ class GUI:
             self.log(f"Error clearing logs: {e}", "ERROR")
 
     def clear_grid(self):
+        """清除网格中的所有细胞"""
+        if self.env is not None:
+            try:
+                self.env.reset(0)
+                self.step_count = 0
+                self.draw_grid()
+                self.update_statistics()
+                self.log("Grid cleared")
+            except Exception as e:
+                self.log(f"Error clearing grid: {e}", "ERROR")
+    
+    def update_statistics(self):
         pass
 
     def draw_grid(self):
