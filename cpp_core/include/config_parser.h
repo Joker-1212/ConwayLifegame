@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <unordered_map>
 
 /**
  * @file config_parser.h
@@ -19,10 +20,11 @@
 class ConfigParser
 {
 private:
-    std::string config_file_path_; ///< 配置文件路径
-    int i_config[7];               ///< 整型配置存储,前5项目依次代表Live_min, Live_max, Breed_min, Breed_max, Vision，后2项目依次代表X, Y
-    double f_config[4];            ///< 浮点型配置存储，依次代表Death_Rate, Energy_comsumption, Restore_prob, Restore_value
-
+    std::string config_file_path_;                     ///< 配置文件路径
+    std::unordered_map<std::string, int> i_config_map; ///< 整型配置映射
+    std::unordered_map<std::string, int> f_config_map; ///< 浮点型配置映射
+    int i_config[7] = {0};                             ///< 整型配置数组
+    double f_config[4] = {0.0};                        ///< 浮点型
 public:
     /**
      * @brief 构造函数
@@ -38,7 +40,7 @@ public:
      */
     bool loadConfig();
 
-       /**
+    /**
      * @brief 获取整型配置值
      * @param key 配置键名
      * @param default_value 默认值
