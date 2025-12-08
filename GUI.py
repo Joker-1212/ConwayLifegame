@@ -329,7 +329,14 @@ class GUI:
         self.log("Garbage collection forced")
 
     def clear_log(self):
-        pass
+        """
+        清理调试日志
+        """
+        try:
+            dpg.set_value("Logs", "")
+            self.log("Logs cleared")
+        except Exception as e:
+            self.log(f"Error clearing logs: {e}", "ERROR")
 
     def clear_grid(self):
         pass
