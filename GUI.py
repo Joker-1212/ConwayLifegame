@@ -333,7 +333,7 @@ class GUI:
         """
         细胞与网格线绘制函数
         """
-        self.log("Draw function called", "DEBUG")
+        # self.log("Draw function called", "DEBUG")
         if not dpg.does_alias_exist("grid_drawlist"):
             return
         
