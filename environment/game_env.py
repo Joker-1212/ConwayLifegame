@@ -16,7 +16,7 @@ class SmartGameEnv:
         # 从配置获取视野距离
         self.config_parser = smart_life_core.ConfigParser(config_file)
         # self.vision_d = self.config_parser.get_int("Vision", 5)
-        self.vision_d = 5
+        self.vision_d = self.config_parser.get_int("VISION", 5)
         #FIXME: 临时硬编码，等待core库更新
         self.state_size = (2 * self.vision_d + 1) ** 2
         self.action_size = 9  # 8个方向 + 不动

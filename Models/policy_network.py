@@ -12,7 +12,6 @@ class PolicyNetwork(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, output_dim),
-            nn.Softmax(dim=-1)
         )
         # self.fc1 = nn.Linear(input_dim, hidden_dim)
         # self.fc2 = nn.Linear(hidden_dim, hidden_dim)

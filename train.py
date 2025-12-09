@@ -20,8 +20,8 @@ def train():
     )
     
     # 打印当前配置
-    print("Initial configuration:")
-    env.print_config()
+    # print("Initial configuration:")
+    # env.print_config()
     
     # 初始化模型和智能体
     state_size = env.state_size 
@@ -33,14 +33,14 @@ def train():
     target_net.load_state_dict(policy_net.state_dict()) # 
     
     agent = CellAgent(policy_net, state_size, action_size)
-    optimizer = optim.Adam(policy_net.parameters(), lr=Config.LEARNING_RATE)
+    optimizer = optim.Adam(policy_net.parameters(), lr=configs["LEARNING_RATE"])
     replay_buffer = ExperienceReplay(configs["BUFFER_SIZE"])
     
     epsilon = configs["EPSILON_START"]
     episode_rewards = []
     
     for episode in range(configs["MAX_EPISODES"]):
-        state = env.reset(int(configs["INITIAL_CELLS_POTION"] * Config.ENV_WIDTH * configs["ENV_HEIGHT"]))
+        state = env.reset(int(configs["INITIAL_CELLS_POTION"] * configs["ENV_WIDTH"] * configs["ENV_HEIGHT"]))
         # print(f"Initial population: {env.get_population()}, Density: {env.get_density():.3f}")
         total_reward = 0
         steps = 0
