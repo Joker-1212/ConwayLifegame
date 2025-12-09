@@ -12,15 +12,15 @@ GameEnvironment::GameEnvironment(int width, int height, const std::string &confi
     : width_(width), height_(height), config_(config_file), grid_(height, std::vector<bool>(width, false))
 {
     // 加载配置
-    Live_max = config_.getInt("Live_max", 3);
-    Live_min = config_.getInt("Live_min", 2);
-    Breed_max = config_.getInt("Breed_max", 3);
-    Breed_min = config_.getInt("Breed_min", 3);
-    Vision = config_.getInt("Vision", 5);
-    Death_Rate = config_.getDouble("Death_Rate", 0.1);
-    Energy_comsumption = config_.getDouble("Energy_comsumption", 0.1);
-    Restore_prob = config_.getDouble("Restore_prob", 0.1);
-    Restore_value = config_.getDouble("Restore_value", 0.2);
+    Live_max = config_.getInt("LIVE_MAX", 3);
+    Live_min = config_.getInt("LIVE_MIN", 2);
+    Breed_max = config_.getInt("BREED_MAX", 3);
+    Breed_min = config_.getInt("BREED_MIN", 3);
+    Vision = config_.getInt("VISION", 5);
+    Death_Rate = config_.getDouble("DEATH_RATE", 0.1);
+    Energy_comsumption = config_.getDouble("ENERGY_COMSUMPTION", 0.1);
+    Restore_prob = config_.getDouble("RESTORE_PROB", 0.1);
+    Restore_value = config_.getDouble("RESTORE_VALUE", 0.2);
     // TODO:判断用户输入是否合理
 }
 const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
