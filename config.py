@@ -20,7 +20,7 @@ class Config:
         self.configs["TARGET_UPDATE"] = 100
         self.configs["INITIAL_CELLS_POTION"] = 0.5 
         # 模型参数
-        self.configs["HIDDEN_SIZE"] = 128
+        self.configs["HIDDEN_SIZE"] = 256
         
         # 训练控制
         self.configs["MAX_EPISODES"] = 1000

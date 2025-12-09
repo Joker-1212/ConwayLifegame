@@ -38,7 +38,7 @@ class GUI:
             'density': 0.0,
             'episode': 0,
             'reward': 0.0,
-            'step_per_sec': 0,
+            'steps_per_sec': 0,
             'average_reward': 0.0,
             'total_steps': 0,
             'training_loss': 0.0
@@ -51,6 +51,7 @@ class GUI:
         try:
         # 初始化游戏环境
             self.log("Initializing environment...")
+            self.configs.load_from_file()
             self.env = SmartGameEnv(
                 width=self.configs["ENV_WIDTH"],
                 height=self.configs["ENV_HEIGHT"],
@@ -152,16 +153,15 @@ class GUI:
                     # Rule Setting
                     with dpg.collapsing_header(label="Rule Setting", default_open=False):
                         dpg.add_text("Game Rules")
-                        dpg.add_input_int(label="Survive Min", default_value=2, tag="rule_survive_min")
-                        dpg.add_input_int(label="Survive Max", default_value=3, tag="rule_survive_max")
-                        dpg.add_input_int(label="Breed Min", default_value=3, tag="rule_breed_min")
-                        dpg.add_input_int(label="Breed Max", default_value=3, tag="rule_breed_max")
-                        dpg.add_input_float(label="Death Rate", default_value=0.1, tag="rule_death_rate")
-                        # TODO: 用 Config 配置默认参数
-                        dpg.add_input_float(label="Energy Consume", default_value=0.1, tag="rule_energy_consume")
-                        dpg.add_input_float(label="Energy Gain", default_value=0.2, tag="rule_energy_gain")
-                        dpg.add_input_float(label="Energy Gain\nProbability", default_value=0.1, tag="rule_energy_gain_prob")
-                        # ENDTODO: 用 Config 配置默认参数
+                        dpg.add_input_int(label="Survive Min", default_value=self.configs["LIVE_MIN"], tag="rule_live_min")
+                        dpg.add_input_int(label="Survive Max", default_value=self.configs["LIVE_MAX"], tag="rule_live_max")
+                        dpg.add_input_int(label="Breed Min", default_value=self.configs["BREED_MIN"], tag="rule_breed_min")
+                        dpg.add_input_int(label="Breed Max", default_value=self.configs["BREED_MAX"], tag="rule_breed_max")
+                        dpg.add_input_int(label="Vision Distance", default_value=self.configs["VISION"], tag="rule_vision")
+                        dpg.add_input_float(label="Death Rate", default_value=self.configs["DEATH_RATE"], tag="rule_death_rate")
+                        dpg.add_input_float(label="Energy Consume", default_value=self.configs["ENERGY_CONSUMPTION"], tag="rule_energy_consumption")
+                        dpg.add_input_float(label="Energy Gain", default_value=self.configs['RESTORE_VALUE'], tag="rule_restore_value")
+                        dpg.add_input_float(label="Energy Gain\nProbability", default_value=self.configs['RESTORE_PROB'], tag="rule_restore_prob")
                         dpg.add_button(label="Apply Rules", callback=self.apply_rules)
                         dpg.add_button(label="Reload Rules", callback=self.reload_rules)
                     
@@ -292,7 +292,85 @@ class GUI:
             self.log(f"Err handling grid click: {e}", "ERROR")
 
     def apply_rules(self):
-        pass
+        """应用新的游戏规则"""
+        try:
+            # 获取新的规则值
+            live_min = dpg.get_value("rule_live_min")
+            live_max = dpg.get_value("rule_live_max")
+            breed_min = dpg.get_value("rule_breed_min")
+            breed_max = dpg.get_value("rule_breed_max")
+            vision = dpg.get_value("rule_vision")
+            death_rate = dpg.get_value("rule_death_rate")
+            energy_consumption = dpg.get_value("rule_energy_consumption")
+            restore_prob = dpg.get_value("rule_restore_prob")
+            restore_value = dpg.get_value("rule_restore_value")
+            env_width = dpg.get_value("config_width")
+            env_height = dpg.get_value("config_height")
+
+            if (live_min < 0 or live_max < live_min or live_max > 8):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (breed_max < breed_min or breed_min < 0 or breed_max > 8):
+                return
+            if (vision < 1 or vision > 8):
+                return
+            if (death_rate < 0.0 or death_rate >= 1.0):
+                return
+            if (energy_consumption < 0.0):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (restore_prob < 0.0 or restore_prob > 1.0 or restore_value < 0.0):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (env_height <= 0 or env_width <= 0 or env_height > 200 or env_width > 200):
+                self.log("Fail applying rules", "ERROR")
+                return
+            # 更新配置文件
+            config_content = f"""# Smart Game of Life Configuration
+# Minimum number of neighbors for a cell to survive
+LIVE_MIN = {live_min}
+
+# Maximum number of neighbors for a cell to survive  
+LIVE_MAX = {live_max}
+
+# Minimum number of neighbors for a cell to be born
+BREED_MIN = {breed_min}
+
+# Maximum number of neighbors for a cell to be born
+BREED_MAX = {breed_max}
+
+# Cell vision distance
+VISION = {vision}
+
+# Cell death probability
+DEATH_RATE = {death_rate:.1f}
+
+# Cell energy consume
+ENERGY_CONSUMPTION = {energy_consumption:.1f}
+
+# Cell energy restore rate
+RESTORE_PROB = {restore_prob:.1f}
+RESTORE_VALUE = {restore_value:.1f}
+
+# Grid size
+ENV_WIDTH = {env_width}
+ENV_HEIGHT = {env_height}
+"""
+            
+            with open(self.configs['CONFIG_FILE'], 'w') as f:
+                f.write(config_content)
+            
+            self.log("Rules updated and saved to config.txt")
+            
+            # 重新加载环境以应用新规则
+            self.initialize_environment()
+            self.draw_grid()
+            self.update_statistics()
+            
+            self.log("Environment reloaded with new rules")
+            
+        except Exception as e:
+            self.log(f"Error applying rules: {e}", "ERROR")
 
     def reload_rules(self):
         pass
@@ -375,7 +453,7 @@ class GUI:
                 self.frame_count = 0
                 self.last_update_time = current_time
             
-            self.stats['population'] = self.env.get_population(),
+            self.stats['population'] = self.env.get_population()
             self.stats['density'] = self.stats['population'] / (self.configs['ENV_HEIGHT'] * self.configs['ENV_WIDTH'])
 
             dpg.set_value("stat_population", f"Population: {self.stats['population']}")
@@ -383,7 +461,7 @@ class GUI:
             dpg.set_value("stat_episode", f"Episode: {self.stats['episode']}")
             dpg.set_value("stat_reward", f"Reward: {self.stats['reward']:.3f}")
             dpg.set_value("stat_steps", f"Steps: {self.stats['total_steps']}")
-            dpg.set_value("stat_steps_per_sec", f"Steps/Sec: {self.stats['steps_per_second']:.1f}")
+            dpg.set_value("stat_steps_per_sec", f"Steps/Sec: {self.stats['steps_per_sec']:.1f}")
             dpg.set_value("stat_avg_reward", f"Avg Reward: {self.stats['average_reward']:.3f}")
             dpg.set_value("stat_loss", f"Training Loss: {self.stats['training_loss']:.3f}")
         except Exception as e:
