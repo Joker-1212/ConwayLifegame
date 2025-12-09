@@ -245,7 +245,65 @@ class GUI:
         self.log(f"Cell size changed to {app_data}")
 
     def apply_config(self):
-        pass
+        """应用新的游戏规则"""
+        try:
+            # 获取新的规则值
+            live_min = dpg.get_value("rule_live_min")
+            live_max = dpg.get_value("rule_live_max")
+            breed_min = dpg.get_value("rule_breed_min")
+            breed_max = dpg.get_value("rule_breed_max")
+            vision = dpg.get_value("rule_vision")
+            death_rate = dpg.get_value("rule_death_rate")
+            energy_consumption = dpg.get_value("rule_energy_consumption")
+            restore_prob = dpg.get_value("rule_restore_prob")
+            restore_value = dpg.get_value("rule_restore_value")
+            
+            # 更新配置文件
+            config_content = f"""# Smart Game of Life Configuration
+# Minimum number of neighbors for a cell to survive
+LIVE_MIN = {live_min}
+
+# Maximum number of neighbors for a cell to survive  
+LIVE_MAX = {live_max}
+
+# Minimum number of neighbors for a cell to be born
+BREED_MIN = {breed_min}
+
+# Maximum number of neighbors for a cell to be born
+BREED_MAX = {breed_max}
+
+# Cell vision distance
+VISION = {vision}
+
+# Cell death probability
+DEATH_RATE = {death_rate}
+
+# Cell energy consume
+ENERGY_CONSUMPTION = {energy_consumption}
+
+# Cell energy restore rate
+RESTORE_PROB = {restore_prob}
+RESTORE_VALUE = {restore_value}
+
+# Grid size
+X = {self.configs['ENV_WIDTH']}
+Y = {self.configs['ENV_HEIGHT']}
+"""
+            
+            with open(Config.CONFIG_FILE, 'w') as f:
+                f.write(config_content)
+            
+            self.log("Rules updated and saved to config.txt")
+            
+            # 重新加载环境以应用新规则
+            self.initialize_environment()
+            self.draw_grid()
+            self.update_statistics()
+            
+            self.log("Environment reloaded with new rules")
+            
+        except Exception as e:
+            self.log(f"Error applying rules: {e}", "ERROR")
 
     def auto_training(self):
         pass
