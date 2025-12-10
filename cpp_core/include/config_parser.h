@@ -1,6 +1,7 @@
 #ifndef CONFIG_PARSER_H
 #define CONFIG_PARSER_H
 
+#include <vector>
 #include <string>
 #include <fstream>
 #include <unordered_map>
@@ -23,14 +24,15 @@ private:
     std::string config_file_path_;                     ///< 配置文件路径
     std::unordered_map<std::string, int> i_config_map; ///< 整型配置映射
     std::unordered_map<std::string, int> f_config_map; ///< 浮点型配置映射
-    int i_config[7] = {0};                             ///< 整型配置数组
-    double f_config[4] = {0.0};                        ///< 浮点型
+    int i_config[7] = {0};
+    double f_config[4] = {0.0};
+
 public:
     /**
      * @brief 构造函数
      * @param config_file 配置文件路径，默认为"config.txt"
      */
-    ConfigParser(const std::string &config_file = "config.txt");
+    ConfigParser(const std::string &config_file = "../config.txt");
 
     // 以下方法在 PyBind11 绑定中被直接调用
 
@@ -39,6 +41,12 @@ public:
      * @return 操作是否成功
      */
     bool loadConfig();
+
+    /**
+     * @brief 保存配置到文件
+     * @return 操作是否成功
+     */
+    bool saveConfig();
 
     /**
      * @brief 获取整型配置值
