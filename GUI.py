@@ -10,6 +10,7 @@ import os
 import sys
 import subprocess
 import time
+import json
 from config import Config
 
 class GUI:
@@ -373,7 +374,17 @@ ENV_HEIGHT = {env_height}
             self.log(f"Error applying rules: {e}", "ERROR")
 
     def reload_rules(self):
-        pass
+        """
+        重新加载规则配置文件
+        """
+        try:
+            self.setup_environment()
+            self.draw_grid()
+            self.update_statistics()
+
+            self.log("Rules reloaded from config.txt")
+        except Exception as e:
+            self.log(f"Error reloading rules: {e}", "ERROR")
 
     def load_model(self):
         pass
@@ -384,14 +395,55 @@ ENV_HEIGHT = {env_height}
     def stop_training(self):
         pass
 
-    def change_update_interval(self):
-        pass
+    def change_update_interval(self, sender, app_data):
+        """
+        Update Interval 滑动条的回调函数
+        """
+        self.update_interval = app_data
+        self.log(f"Update interval changed to {app_data:.2f} seconds")
 
     def start_simulation(self):
         pass
 
     def export_state(self):
-        pass
+        """将当前网格状态导出到 JSON 文件"""
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"simulation_state_{timestamp}.json"
+            
+            state_data = {
+                "timestamp": timestamp,
+                "environment": {
+                    "width": Config.ENV_WIDTH,
+                    "height": Config.ENV_HEIGHT,
+                    "population": self.stats['population'],
+                    "density": self.stats['density']
+                },
+                "simulation": {
+                    "step_count": self.step_count,
+                    "episode": self.stats['episode'],
+                    "total_reward": self.stats['reward'],
+                    "average_reward": self.stats['average_reward']
+                },
+                "cell_positions": list(self.cell_positions),
+                "settings": {
+                    "update_interval": self.update_interval,
+                    "cell_size": self.cell_size,
+                    "is_running": self.is_running,
+                    "is_training": self.is_training,
+                    "debug_mode": self.debug_mode,
+                    "edit_mode": self.edit_mode,
+                    "show_grid_lines": self.show_grid_lines
+                }
+            }
+            
+            with open(filename, 'w') as f:
+                json.dump(state_data, f, indent=2)
+                
+            self.log_message(f"Simulation state exported to {filename}")
+            
+        except Exception as e:
+            self.log_message(f"Error exporting state: {e}", "ERROR")
 
     def pause_simulation(self):
         pass
