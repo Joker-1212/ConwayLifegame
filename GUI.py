@@ -316,6 +316,7 @@ class GUI:
                 self.env.remove_cell(rx, ry)
                 self.log(f"Cell removed at ({rx}, {ry})")
             self.draw_grid()
+            self.update_statistics()
         except Exception as e:
             self.log(f"Err handling grid click: {e}", "ERROR")
 
@@ -477,10 +478,10 @@ ENV_HEIGHT = {env_height}
             with open(filename, 'w') as f:
                 json.dump(state_data, f, indent=2)
                 
-            self.log_message(f"Simulation state exported to {filename}")
+            self.log(f"Simulation state exported to {filename}")
             
         except Exception as e:
-            self.log_message(f"Error exporting state: {e}", "ERROR")
+            self.log(f"Error exporting state: {e}", "ERROR")
 
     def pause_simulation(self):
         self.is_running = False
@@ -514,7 +515,7 @@ ENV_HEIGHT = {env_height}
         """Reset the simulation"""
         if self.env is not None:
             try:
-                self.env.reset(0)
+                self.initialize_environment()
                 self.step_count = 0
                 self.stats['reward'] = 0.0
                 self.stats['average_reward'] = 0.0
@@ -668,13 +669,13 @@ ENV_HEIGHT = {env_height}
         
         try:
             while not self.log_queue.empty():
-                log_message = self.log_queue.get_nowait()
+                log = self.log_queue.get_nowait()
 
                 current_logs = dpg.get_value("Logs")
                 if current_logs is None:
                     current_logs = ""
                 
-                lines = current_logs.split('\n') + [log_message]
+                lines = current_logs.split('\n') + [log]
                 if len(lines) > 50:
                     lines = lines[-50:]
 
@@ -693,10 +694,10 @@ ENV_HEIGHT = {env_height}
                     if state.size > 0:
                         epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
                         actions = self.agent.act(state, epsilon=epsilon)
-                        self.log_message(f"Agent selected {len(actions)} actions with epsilon={epsilon:.2f}", "DEBUG")
+                        self.log(f"Agent selected {len(actions)} actions with epsilon={epsilon:.2f}", "DEBUG")
                     else:
                         actions = None
-                        self.log_message("No cells alive, no action takes", "DEBUG")
+                        self.log("No cells alive, no action takes", "DEBUG")
                     next_state, reward, done, info = self.env.step(actions)
                     self.stats['reward'] += reward
                     self.step_count += 1
@@ -705,9 +706,9 @@ ENV_HEIGHT = {env_height}
 
                     if done:
                         self.stats['episode'] += 1
-                        self.log_message(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
-                        self.draw_grid()
-                        self.update_statistics()
+                        self.log(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
+                    self.draw_grid()
+                    self.update_statistics()
                 except Exception as e:
                     self.log(f"Error while simulating: {e}", "ERROR")
                     self.is_running = False
