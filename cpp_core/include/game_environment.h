@@ -28,7 +28,7 @@ private:
     int Breed_min, Breed_max;                  ///< 繁殖邻居数范围
     int Vision;                                ///< 细胞视野范围
     double Death_Rate;                         ///< 细胞死亡概率
-    double Energy_comsumption;                 ///< 细胞能量消耗率
+    double Energy_consumption;                 ///< 细胞能量消耗率
     double Restore_prob;                       ///< 细胞能量恢复概率
     double Restore_value;                      ///< 细胞能量恢复值
     ConfigParser config_;                      ///< 配置管理器

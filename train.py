@@ -20,8 +20,8 @@ def train():
     )
     
     # 打印当前配置
-    print("Initial configuration:")
-    env.print_config()
+    # print("Initial configuration:")
+    # env.print_config()
     
     # 初始化模型和智能体
     state_size = env.state_size 

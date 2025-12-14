@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 
@@ -8,27 +7,35 @@ class CellAgent:
         self.model = model
         self.state_size = state_size
         self.action_size = action_size
-
+    
+    # cell = CellAgent(model, 9, 9)
+    # cell.act(0, 1.0) -> CellAgent.act(cell, 0, 1.0)
     def act(self, state, epsilon=0.0):
         if state.size == 0:
             return []
-        
-        # ε-贪婪策略选择动作
+            
         if np.random.random() < epsilon:
-            return np.random.randint(0, self.action_size, size=state.shape[0]).tolist()
+            # 随机动作
+            return np.random.randint(0, self.action_size, len(state)).tolist()
         else:
+            # 模型预测
             self.model.eval()
             with torch.no_grad():
                 state_tensor = torch.FloatTensor(state)
                 q_values = self.model(state_tensor)
                 actions = torch.argmax(q_values, dim=1)
-            return actions.cpu().numpy().tolist()
-        
+            return actions.numpy().tolist()
+        # self.model.eval()
+        # with torch.no_grad():
+        #     state_tensor = torch.FloatTensor(state)
+        #     q_values = self.model(state_tensor)
+        #     actions = torch.argmax(q_values, dim=1)
+        # return actions.numpy().tolist()
+    
     def get_action_probabilities(self, state):
         if state.size == 0:
             return torch.zeros(0, self.action_size)
-
-        # 前馈传播获取动作概率
+            
         state_tensor = torch.FloatTensor(state)
         action_logits = self.model(state_tensor)
-        return F.softmax(action_logits, dim=-1)
+        return F.softmax(action_logits, dim=1)

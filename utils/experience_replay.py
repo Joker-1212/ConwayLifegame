@@ -6,8 +6,8 @@ class ExperienceReplay:
     def __init__(self, max_size=10000):
         self.buffer = deque(maxlen=max_size)
 
-    def push(self, experience):
-        self.buffer.append(experience)
+    def push(self, state, action, reward, next_state, done):
+        self.buffer.append((state, action, reward, next_state, done))
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)

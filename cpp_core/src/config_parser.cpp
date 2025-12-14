@@ -13,9 +13,9 @@ ConfigParser::ConfigParser(const std::string &config_file)
     : config_file_path_(config_file)
 {
     i_config_map = {
-        {"LIVE_MIN", 0}, {"LIVE_MAX", 1}, {"BREED_MIN", 2}, {"BREED_MAX", 3}, {"VISION", 4}, {"X", 5}, {"Y", 6}};
+        {"LIVE_MIN", 0}, {"LIVE_MAX", 1}, {"BREED_MIN", 2}, {"BREED_MAX", 3}, {"VISION", 4}, {"ENV_WIDTH", 5}, {"ENV_HEIGHT", 6}};
     f_config_map = {
-        {"DEATH_RATE", 0}, {"ENERGY_COMSUMPTION", 1}, {"RESTORE_PROB", 2}, {"RESTORE_VALUE", 3}};
+        {"DEATH_RATE", 0}, {"ENERGY_CONSUMPTION", 1}, {"RESTORE_PROB", 2}, {"RESTORE_VALUE", 3}};
 }
 
 bool ConfigParser::loadConfig()
@@ -63,9 +63,101 @@ bool ConfigParser::loadConfig()
     }
     return true;
 }
+bool ConfigParser::saveConfig()
+{
+    std::ifstream inFile(config_file_path_);
+    if (!inFile.is_open())
+    {
+        return false;
+    }
+
+    // 读取原文件所有内容到内存
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(inFile, line))
+    {
+        lines.push_back(line);
+    }
+    inFile.close();
+
+    // 重新打开文件进行写入（覆盖模式）
+    std::ofstream outFile(config_file_path_);
+    if (!outFile.is_open())
+    {
+        return false;
+    }
+
+    // 处理每一行
+    for (const auto &currentLine : lines)
+    {
+        std::string trimmedLine = currentLine;
+
+        // 去除前后空白
+        if (!trimmedLine.empty())
+        {
+            size_t start = trimmedLine.find_first_not_of(" \t");
+            size_t end = trimmedLine.find_last_not_of(" \t");
+            if (start != std::string::npos && end != std::string::npos)
+            {
+                trimmedLine = trimmedLine.substr(start, end - start + 1);
+            }
+        }
+
+        // 跳过注释和空行（原样写入）
+        if (trimmedLine.empty() || trimmedLine[0] == '#')
+        {
+            outFile << currentLine << std::endl;
+            continue;
+        }
+
+        // 检查键值对
+        size_t delimPos = trimmedLine.find('=');
+        if (delimPos != std::string::npos)
+        {
+            std::string key = trimmedLine.substr(0, delimPos);
+
+            // 去除键的前后空白
+            size_t keyStart = key.find_first_not_of(" \t");
+            size_t keyEnd = key.find_last_not_of(" \t");
+            if (keyStart != std::string::npos && keyEnd != std::string::npos)
+            {
+                key = key.substr(keyStart, keyEnd - keyStart + 1);
+            }
+
+            // 检查并更新配置值
+            if (i_config_map.find(key) != i_config_map.end())
+            {
+                // 找到原始行中的等号位置
+                size_t eqPos = currentLine.find('=');
+                if (eqPos != std::string::npos)
+                {
+                    // 保留等号前的所有内容，只修改等号后的值
+                    outFile << currentLine.substr(0, eqPos + 1) << " "
+                            << i_config[i_config_map[key]] << std::endl;
+                    continue;
+                }
+            }
+            else if (f_config_map.find(key) != f_config_map.end())
+            {
+                size_t eqPos = currentLine.find('=');
+                if (eqPos != std::string::npos)
+                {
+                    outFile << currentLine.substr(0, eqPos + 1) << " "
+                            << f_config[f_config_map[key]] << std::endl;
+                    continue;
+                }
+            }
+        }
+
+        // 其他行原样写入
+        outFile << currentLine << std::endl;
+    }
+
+    outFile.close();
+    return true;
+}
 int ConfigParser::getInt(const std::string &key, int default_value) const
 {
-    // FIXME: 出现恶性 Bug: 解析配置文件不正确
     // 获取类型为整型的配置值
     if (i_config_map.find(key) != i_config_map.end())
     {
@@ -75,6 +167,7 @@ int ConfigParser::getInt(const std::string &key, int default_value) const
     {
         return default_value;
     }
+    return default_value;
 }
 
 double ConfigParser::getDouble(const std::string &key, double default_value) const
