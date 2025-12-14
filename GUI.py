@@ -246,7 +246,34 @@ class GUI:
         self.log(f"Cell size changed to {app_data}")
 
     def apply_config(self):
-        pass
+        """
+        应用新的环境配置
+        """
+        try:
+            new_width = dpg.get_value("config_width")
+            new_height = dpg.get_value("config_height")
+            new_density = dpg.get_value("config_density")
+
+            if new_width <= 0 or new_height <= 0:
+                self.log("Invalid grid dimensions", "ERROR")
+                return
+
+            self.configs["ENV_WIDTH"] = new_width
+            self.configs["ENV_HEIGHT"] = new_height
+            self.configs["INITIAL_CELLS_POTION"] = new_density
+
+            # 重新初始化环境
+            self.initialize_environment()
+
+            # 更新GUI显示
+            dpg.configure_item("grid_drawlist",
+                               width=new_width * self.cell_size,
+                               height=new_height * self.cell_size)
+            self.draw_grid()
+            self.update_statistics()
+            self.log(f"Configuration applied: {new_width}x{new_height}, density={new_density:.2f}")
+        except Exception as e:
+            self.log(f"Error applying config: {e}", "ERROR")
 
     def auto_training(self):
         pass
