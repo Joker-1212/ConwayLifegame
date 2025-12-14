@@ -10,6 +10,7 @@ import os
 import sys
 import subprocess
 import time
+import json
 from config import Config
 
 class GUI:
@@ -38,7 +39,7 @@ class GUI:
             'density': 0.0,
             'episode': 0,
             'reward': 0.0,
-            'step_per_sec': 0,
+            'steps_per_sec': 0,
             'average_reward': 0.0,
             'total_steps': 0,
             'training_loss': 0.0
@@ -51,6 +52,7 @@ class GUI:
         try:
         # 初始化游戏环境
             self.log("Initializing environment...")
+            self.configs.load_from_file()
             self.env = SmartGameEnv(
                 width=self.configs["ENV_WIDTH"],
                 height=self.configs["ENV_HEIGHT"],
@@ -152,16 +154,15 @@ class GUI:
                     # Rule Setting
                     with dpg.collapsing_header(label="Rule Setting", default_open=False):
                         dpg.add_text("Game Rules")
-                        dpg.add_input_int(label="Survive Min", default_value=2, tag="rule_survive_min")
-                        dpg.add_input_int(label="Survive Max", default_value=3, tag="rule_survive_max")
-                        dpg.add_input_int(label="Breed Min", default_value=3, tag="rule_breed_min")
-                        dpg.add_input_int(label="Breed Max", default_value=3, tag="rule_breed_max")
-                        dpg.add_input_float(label="Death Rate", default_value=0.1, tag="rule_death_rate")
-                        # TODO: 用 Config 配置默认参数
-                        dpg.add_input_float(label="Energy Consume", default_value=0.1, tag="rule_energy_consume")
-                        dpg.add_input_float(label="Energy Gain", default_value=0.2, tag="rule_energy_gain")
-                        dpg.add_input_float(label="Energy Gain\nProbability", default_value=0.1, tag="rule_energy_gain_prob")
-                        # ENDTODO: 用 Config 配置默认参数
+                        dpg.add_input_int(label="Survive Min", default_value=self.configs["LIVE_MIN"], tag="rule_live_min")
+                        dpg.add_input_int(label="Survive Max", default_value=self.configs["LIVE_MAX"], tag="rule_live_max")
+                        dpg.add_input_int(label="Breed Min", default_value=self.configs["BREED_MIN"], tag="rule_breed_min")
+                        dpg.add_input_int(label="Breed Max", default_value=self.configs["BREED_MAX"], tag="rule_breed_max")
+                        dpg.add_input_int(label="Vision Distance", default_value=self.configs["VISION"], tag="rule_vision")
+                        dpg.add_input_float(label="Death Rate", default_value=self.configs["DEATH_RATE"], tag="rule_death_rate")
+                        dpg.add_input_float(label="Energy Consume", default_value=self.configs["ENERGY_CONSUMPTION"], tag="rule_energy_consumption")
+                        dpg.add_input_float(label="Energy Gain", default_value=self.configs['RESTORE_VALUE'], tag="rule_restore_value")
+                        dpg.add_input_float(label="Energy Gain\nProbability", default_value=self.configs['RESTORE_PROB'], tag="rule_restore_prob")
                         dpg.add_button(label="Apply Rules", callback=self.apply_rules)
                         dpg.add_button(label="Reload Rules", callback=self.reload_rules)
                     
@@ -245,65 +246,34 @@ class GUI:
         self.log(f"Cell size changed to {app_data}")
 
     def apply_config(self):
-        """应用新的游戏规则"""
+        """
+        应用新的环境配置
+        """
         try:
-            # 获取新的规则值
-            live_min = dpg.get_value("rule_live_min")
-            live_max = dpg.get_value("rule_live_max")
-            breed_min = dpg.get_value("rule_breed_min")
-            breed_max = dpg.get_value("rule_breed_max")
-            vision = dpg.get_value("rule_vision")
-            death_rate = dpg.get_value("rule_death_rate")
-            energy_consumption = dpg.get_value("rule_energy_consumption")
-            restore_prob = dpg.get_value("rule_restore_prob")
-            restore_value = dpg.get_value("rule_restore_value")
-            
-            # 更新配置文件
-            config_content = f"""# Smart Game of Life Configuration
-# Minimum number of neighbors for a cell to survive
-LIVE_MIN = {live_min}
+            new_width = dpg.get_value("config_width")
+            new_height = dpg.get_value("config_height")
+            new_density = dpg.get_value("config_density")
 
-# Maximum number of neighbors for a cell to survive  
-LIVE_MAX = {live_max}
+            if new_width <= 0 or new_height <= 0:
+                self.log("Invalid grid dimensions", "ERROR")
+                return
 
-# Minimum number of neighbors for a cell to be born
-BREED_MIN = {breed_min}
+            self.configs["ENV_WIDTH"] = new_width
+            self.configs["ENV_HEIGHT"] = new_height
+            self.configs["INITIAL_CELLS_POTION"] = new_density
 
-# Maximum number of neighbors for a cell to be born
-BREED_MAX = {breed_max}
-
-# Cell vision distance
-VISION = {vision}
-
-# Cell death probability
-DEATH_RATE = {death_rate}
-
-# Cell energy consume
-ENERGY_CONSUMPTION = {energy_consumption}
-
-# Cell energy restore rate
-RESTORE_PROB = {restore_prob}
-RESTORE_VALUE = {restore_value}
-
-# Grid size
-X = {self.configs['ENV_WIDTH']}
-Y = {self.configs['ENV_HEIGHT']}
-"""
-            
-            with open(Config.CONFIG_FILE, 'w') as f:
-                f.write(config_content)
-            
-            self.log("Rules updated and saved to config.txt")
-            
-            # 重新加载环境以应用新规则
+            # 重新初始化环境
             self.initialize_environment()
+
+            # 更新GUI显示
+            dpg.configure_item("grid_drawlist",
+                               width=new_width * self.cell_size,
+                               height=new_height * self.cell_size)
             self.draw_grid()
             self.update_statistics()
-            
-            self.log("Environment reloaded with new rules")
-            
+            self.log(f"Configuration applied: {new_width}x{new_height}, density={new_density:.2f}")
         except Exception as e:
-            self.log(f"Error applying rules: {e}", "ERROR")
+            self.log(f"Error applying config: {e}", "ERROR")
 
     def auto_training(self):
         pass
@@ -346,14 +316,112 @@ Y = {self.configs['ENV_HEIGHT']}
                 self.env.remove_cell(rx, ry)
                 self.log(f"Cell removed at ({rx}, {ry})")
             self.draw_grid()
+            self.update_statistics()
         except Exception as e:
             self.log(f"Err handling grid click: {e}", "ERROR")
 
     def apply_rules(self):
-        pass
+        """应用新的游戏规则"""
+        try:
+            # 获取新的规则值
+            live_min = dpg.get_value("rule_live_min")
+            live_max = dpg.get_value("rule_live_max")
+            breed_min = dpg.get_value("rule_breed_min")
+            breed_max = dpg.get_value("rule_breed_max")
+            vision = dpg.get_value("rule_vision")
+            death_rate = dpg.get_value("rule_death_rate")
+            energy_consumption = dpg.get_value("rule_energy_consumption")
+            restore_prob = dpg.get_value("rule_restore_prob")
+            restore_value = dpg.get_value("rule_restore_value")
+            env_width = dpg.get_value("config_width")
+            env_height = dpg.get_value("config_height")
+
+            if (live_min < 0 or live_max < live_min or live_max > 8):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (breed_max < breed_min or breed_min < 0 or breed_max > 8):
+                return
+            if (vision < 1 or vision > 8):
+                return
+            if (death_rate < 0.0 or death_rate >= 1.0):
+                return
+            if (energy_consumption < 0.0):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (restore_prob < 0.0 or restore_prob > 1.0 or restore_value < 0.0):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (env_height <= 0 or env_width <= 0 or env_height > 200 or env_width > 200):
+                self.log("Fail applying rules", "ERROR")
+                return
+            # 更新配置文件
+            config_content = f"""# Smart Game of Life Configuration
+# Minimum number of neighbors for a cell to survive
+LIVE_MIN = {live_min}
+
+# Maximum number of neighbors for a cell to survive  
+LIVE_MAX = {live_max}
+
+# Minimum number of neighbors for a cell to be born
+BREED_MIN = {breed_min}
+
+# Maximum number of neighbors for a cell to be born
+BREED_MAX = {breed_max}
+
+# Cell vision distance
+VISION = {vision}
+
+# Cell death probability
+DEATH_RATE = {death_rate:.1f}
+
+# Cell energy consume
+ENERGY_CONSUMPTION = {energy_consumption:.1f}
+
+# Cell energy restore rate
+RESTORE_PROB = {restore_prob:.1f}
+RESTORE_VALUE = {restore_value:.1f}
+
+# Grid size
+ENV_WIDTH = {env_width}
+ENV_HEIGHT = {env_height}
+"""
+            
+            with open(self.configs['CONFIG_FILE'], 'w') as f:
+                f.write(config_content)
+            
+            self.log("Rules updated and saved to config.txt")
+            
+            # 重新加载环境以应用新规则
+            self.initialize_environment()
+            self.draw_grid()
+            self.update_statistics()
+            
+            self.log("Environment reloaded with new rules")
+            
+        except Exception as e:
+            self.log(f"Error applying rules: {e}", "ERROR")
 
     def reload_rules(self):
-        pass
+        """
+        重新加载规则配置文件
+        """
+        try:
+            self.initialize_environment()
+            self.draw_grid()
+            self.update_statistics()
+            dpg.set_value("rule_live_min", self.configs["LIVE_MIN"])
+            dpg.set_value("rule_live_max", self.configs["LIVE_MAX"])
+            dpg.set_value("rule_breed_min", self.configs["BREED_MIN"])
+            dpg.set_value("rule_breed_max", self.configs["BREED_MAX"])
+            dpg.set_value("rule_vision", self.configs["VISION"])
+            dpg.set_value("rule_death_rate", self.configs["DEATH_RATE"])
+            dpg.set_value("rule_energy_consumption", self.configs["ENERGY_CONSUMPTION"])
+            dpg.set_value("rule_restore_prob", self.configs["RESTORE_PROB"])
+            dpg.set_value("rule_restore_value", self.configs["RESTORE_VALUE"])
+
+            self.log("Rules reloaded from config.txt")
+        except Exception as e:
+            self.log(f"Error reloading rules: {e}", "ERROR")
 
     def load_model(self):
         pass
@@ -364,23 +432,99 @@ Y = {self.configs['ENV_HEIGHT']}
     def stop_training(self):
         pass
 
-    def change_update_interval(self):
-        pass
+    def change_update_interval(self, sender, app_data):
+        """
+        Update Interval 滑动条的回调函数
+        """
+        self.update_interval = app_data
+        self.log(f"Update interval changed to {app_data:.2f} seconds")
 
     def start_simulation(self):
-        pass
+        self.is_running = True
+        self.log("Simulation started")
 
     def export_state(self):
-        pass
+        """将当前网格状态导出到 JSON 文件"""
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"simulation_state_{timestamp}.json"
+            
+            state_data = {
+                "timestamp": timestamp,
+                "environment": {
+                    "width": Config.ENV_WIDTH,
+                    "height": Config.ENV_HEIGHT,
+                    "population": self.stats['population'],
+                    "density": self.stats['density']
+                },
+                "simulation": {
+                    "step_count": self.step_count,
+                    "episode": self.stats['episode'],
+                    "total_reward": self.stats['reward'],
+                    "average_reward": self.stats['average_reward']
+                },
+                "cell_positions": list(self.cell_positions),
+                "settings": {
+                    "update_interval": self.update_interval,
+                    "cell_size": self.cell_size,
+                    "is_running": self.is_running,
+                    "is_training": self.is_training,
+                    "debug_mode": self.debug_mode,
+                    "edit_mode": self.edit_mode,
+                    "show_grid_lines": self.show_grid_lines
+                }
+            }
+            
+            with open(filename, 'w') as f:
+                json.dump(state_data, f, indent=2)
+                
+            self.log(f"Simulation state exported to {filename}")
+            
+        except Exception as e:
+            self.log(f"Error exporting state: {e}", "ERROR")
 
     def pause_simulation(self):
-        pass
+        self.is_running = False
+        self.log("Simulation paused")
 
     def step_simulation(self):
-        pass
+        """单步更新"""
+        if self.env is not None:
+            try:
+                state = self.env._get_observation()
+                if state.size > 0:
+                    epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
+                    actions = self.agent.act(state, epsilon=epsilon)
+                else:
+                    actions = None
+
+                next_state, reward, done, info = self.env.step(actions)
+                self.stats['reward'] += reward
+                self.step_count += 1
+
+                if done:
+                    self.stats['episode'] += 1
+
+                self.draw_grid()
+                self.update_statistics()
+                self.log(f"Simulation stepped. Total steps: {self.step_count}")
+            except Exception as e:
+                self.log(f"Error stepping simulation: {e}", "ERROR")
 
     def reset_simulation(self):
-        pass
+        """Reset the simulation"""
+        if self.env is not None:
+            try:
+                self.initialize_environment()
+                self.step_count = 0
+                self.stats['reward'] = 0.0
+                self.stats['average_reward'] = 0.0
+                self.stats['episode'] = 0
+                self.draw_grid()
+                self.update_statistics()
+                self.log("Simulation reset")
+            except Exception as e:
+                self.log(f"Error resetting simulation: {e}", "ERROR")
 
     def toggle_grid_line(self, sender, app_data):
         """
@@ -433,7 +577,7 @@ Y = {self.configs['ENV_HEIGHT']}
                 self.frame_count = 0
                 self.last_update_time = current_time
             
-            self.stats['population'] = self.env.get_population(),
+            self.stats['population'] = self.env.get_population()
             self.stats['density'] = self.stats['population'] / (self.configs['ENV_HEIGHT'] * self.configs['ENV_WIDTH'])
 
             dpg.set_value("stat_population", f"Population: {self.stats['population']}")
@@ -441,7 +585,7 @@ Y = {self.configs['ENV_HEIGHT']}
             dpg.set_value("stat_episode", f"Episode: {self.stats['episode']}")
             dpg.set_value("stat_reward", f"Reward: {self.stats['reward']:.3f}")
             dpg.set_value("stat_steps", f"Steps: {self.stats['total_steps']}")
-            dpg.set_value("stat_steps_per_sec", f"Steps/Sec: {self.stats['steps_per_second']:.1f}")
+            dpg.set_value("stat_steps_per_sec", f"Steps/Sec: {self.stats['steps_per_sec']:.1f}")
             dpg.set_value("stat_avg_reward", f"Avg Reward: {self.stats['average_reward']:.3f}")
             dpg.set_value("stat_loss", f"Training Loss: {self.stats['training_loss']:.3f}")
         except Exception as e:
@@ -525,13 +669,13 @@ Y = {self.configs['ENV_HEIGHT']}
         
         try:
             while not self.log_queue.empty():
-                log_message = self.log_queue.get_nowait()
+                log = self.log_queue.get_nowait()
 
                 current_logs = dpg.get_value("Logs")
                 if current_logs is None:
                     current_logs = ""
                 
-                lines = current_logs.split('\n') + [log_message]
+                lines = current_logs.split('\n') + [log]
                 if len(lines) > 50:
                     lines = lines[-50:]
 
@@ -540,7 +684,34 @@ Y = {self.configs['ENV_HEIGHT']}
             print(f"Error processing log messages: {e}")
 
     def simulation_loop(self):
-        pass
+        """
+        模拟主循环
+        """
+        while True:
+            if self.is_running and self.env is not None:
+                try:
+                    state = self.env._get_observation()
+                    if state.size > 0:
+                        epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
+                        actions = self.agent.act(state, epsilon=epsilon)
+                        self.log(f"Agent selected {len(actions)} actions with epsilon={epsilon:.2f}", "DEBUG")
+                    else:
+                        actions = None
+                        self.log("No cells alive, no action takes", "DEBUG")
+                    next_state, reward, done, info = self.env.step(actions)
+                    self.stats['reward'] += reward
+                    self.step_count += 1
+
+                    self.stats['average_reward'] = self.stats['average_reward'] * 0.95 + reward * 0.05
+
+                    if done:
+                        self.stats['episode'] += 1
+                        self.log(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
+                    self.draw_grid()
+                    self.update_statistics()
+                except Exception as e:
+                    self.log(f"Error while simulating: {e}", "ERROR")
+                    self.is_running = False
 
     def run(self):
         """

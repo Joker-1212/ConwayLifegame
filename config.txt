@@ -22,7 +22,7 @@ ENERGY_CONSUMPTION = 0.1
 
 # Cell energy restore rate
 RESTORE_PROB = 0.1
-RESTORE_VALUE = 0.1
+RESTORE_VALUE = 0.2
 
 # Grid size
 ENV_WIDTH = 100
