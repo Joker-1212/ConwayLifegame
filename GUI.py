@@ -378,9 +378,18 @@ ENV_HEIGHT = {env_height}
         重新加载规则配置文件
         """
         try:
-            self.setup_environment()
+            self.initialize_environment()
             self.draw_grid()
             self.update_statistics()
+            dpg.set_value("rule_live_min", self.configs["LIVE_MIN"])
+            dpg.set_value("rule_live_max", self.configs["LIVE_MAX"])
+            dpg.set_value("rule_breed_min", self.configs["BREED_MIN"])
+            dpg.set_value("rule_breed_max", self.configs["BREED_MAX"])
+            dpg.set_value("rule_vision", self.configs["VISION"])
+            dpg.set_value("rule_death_rate", self.configs["DEATH_RATE"])
+            dpg.set_value("rule_energy_consumption", self.configs["ENERGY_CONSUMPTION"])
+            dpg.set_value("rule_restore_prob", self.configs["RESTORE_PROB"])
+            dpg.set_value("rule_restore_value", self.configs["RESTORE_VALUE"])
 
             self.log("Rules reloaded from config.txt")
         except Exception as e:
@@ -403,7 +412,8 @@ ENV_HEIGHT = {env_height}
         self.log(f"Update interval changed to {app_data:.2f} seconds")
 
     def start_simulation(self):
-        pass
+        self.is_running = True
+        self.log("Simulation started")
 
     def export_state(self):
         """将当前网格状态导出到 JSON 文件"""
@@ -446,13 +456,47 @@ ENV_HEIGHT = {env_height}
             self.log_message(f"Error exporting state: {e}", "ERROR")
 
     def pause_simulation(self):
-        pass
+        self.is_running = False
+        self.log("Simulation paused")
 
     def step_simulation(self):
-        pass
+        """单步更新"""
+        if self.env is not None:
+            try:
+                state = self.env._get_observation()
+                if state.size > 0:
+                    epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
+                    actions = self.agent.act(state, epsilon=epsilon)
+                else:
+                    actions = None
+
+                next_state, reward, done, info = self.env.step(actions)
+                self.stats['reward'] += reward
+                self.step_count += 1
+
+                if done:
+                    self.stats['episode'] += 1
+
+                self.draw_grid()
+                self.update_statistics()
+                self.log(f"Simulation stepped. Total steps: {self.step_count}")
+            except Exception as e:
+                self.log(f"Error stepping simulation: {e}", "ERROR")
 
     def reset_simulation(self):
-        pass
+        """Reset the simulation"""
+        if self.env is not None:
+            try:
+                self.env.reset(0)
+                self.step_count = 0
+                self.stats['reward'] = 0.0
+                self.stats['average_reward'] = 0.0
+                self.stats['episode'] = 0
+                self.draw_grid()
+                self.update_statistics()
+                self.log("Simulation reset")
+            except Exception as e:
+                self.log(f"Error resetting simulation: {e}", "ERROR")
 
     def toggle_grid_line(self, sender, app_data):
         """
@@ -612,7 +656,34 @@ ENV_HEIGHT = {env_height}
             print(f"Error processing log messages: {e}")
 
     def simulation_loop(self):
-        pass
+        """
+        模拟主循环
+        """
+        while True:
+            if self.is_running and self.env is not None:
+                try:
+                    state = self.env._get_observation()
+                    if state.size > 0:
+                        epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
+                        actions = self.agent.act(state, epsilon=epsilon)
+                        self.log_message(f"Agent selected {len(actions)} actions with epsilon={epsilon:.2f}", "DEBUG")
+                    else:
+                        actions = None
+                        self.log_message("No cells alive, no action takes", "DEBUG")
+                    next_state, reward, done, info = self.env.step(actions)
+                    self.stats['reward'] += reward
+                    self.step_count += 1
+
+                    self.stats['average_reward'] = self.stats['average_reward'] * 0.95 + reward * 0.05
+
+                    if done:
+                        self.stats['episode'] += 1
+                        self.log_message(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
+                        self.draw_grid()
+                        self.update_statistics()
+                except Exception as e:
+                    self.log(f"Error while simulating: {e}", "ERROR")
+                    self.is_running = False
 
     def run(self):
         """
