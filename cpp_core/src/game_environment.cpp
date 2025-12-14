@@ -32,52 +32,54 @@ const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 
 void GameEnvironment::initializeRandom(int num_cells)
 {
-    // 在随机位置放置细胞
-    //  生成随机数
+    if (num_cells <= 0)
+        return;
+
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist1(0, width_);
-    std::uniform_int_distribution<int> dist2(0, height_);
-    int r1 = dist1(gen);
-    int r2 = dist2(gen);
-    // 放置细胞
-    for (int i = 1; i <= num_cells; i++)
+    std::uniform_int_distribution<int> distX(0, width_ - 1);
+    std::uniform_int_distribution<int> distY(0, height_ - 1);
+
+    int cells_placed = 0;
+    int attempts = 0;
+    const int max_attempts = num_cells * 10; // 每个细胞最多尝试10次
+
+    while (cells_placed < num_cells && attempts < max_attempts)
     {
-        Position pos(r1, r2);
-        if (pos.x >= 0 && pos.x < height_ && pos.y >= 0 && pos.y < width_ && !grid_[pos.y][pos.x])
+        attempts++;
+
+        int x = distX(gen);
+        int y = distY(gen);
+        Position pos(x, y);
+
+        // 双重检查：先验证位置有效性，再检查是否为空
+        if (!isValidPosition(pos))
         {
-            if (cells_.size() == 0)
-            {
-                cells_.emplace_back(std::make_shared<Cell>(0, pos));
-            }
-            else
-            {
-                long long maxId = cells_[0]->getId();
-                for (int i = 0; i < cells_.size(); i++)
-                {
-                    if (cells_[i]->getId() > maxId)
-                    {
-                        maxId = cells_[i]->getId();
-                    }
-                }
-                cells_.emplace_back(std::make_shared<Cell>(maxId + 1, pos));
-            }
-            grid_[pos.y][pos.x] = true;
+            continue; // 位置无效，重试
         }
+
+        if (!isPositionEmpty(pos))
+        {
+            continue; // 位置已被占用，重试
+        }
+
+        // 位置有效且为空，放置细胞
+        setCell(pos);
+        cells_placed++;
     }
 }
-
 void GameEnvironment::update()
 {
-    // TODO:若所有细胞都静止，更新游戏状态，随机增加能量，增加年龄
+    // 若所有细胞都静止，更新游戏状态，随机增加能量，增加年龄
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
     for (int i = 0; i < cells_.size(); i++)
     {
         if (cells_[i]->isAlive())
         {
             // 随机增加能量
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_real_distribution<double> dist(0.0, 1.0);
+
             double prob = dist(gen);
             if (prob < Restore_prob)
             {
@@ -97,73 +99,73 @@ void GameEnvironment::update()
             int s1 = grid_[1][0] + grid_[0][1] + grid_[1][1];
             if (s1 < Live_min || s1 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().x == width_ && cells_[i]->getPosition().y == 0)
+        else if (cells_[i]->getPosition().x == width_ - 1 && cells_[i]->getPosition().y == 0)
         {
-            int s2 = grid_[0][width_ - 1] + grid_[1][width_ - 1] + grid_[1][width_];
+            int s2 = grid_[0][width_ - 2] + grid_[1][width_ - 2] + grid_[1][width_ - 1];
             if (s2 < Live_min || s2 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y == height_)
+        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y == height_ - 1)
         {
-            int s3 = grid_[height_ - 1][0] + grid_[height_ - 1][1] + grid_[height_][1];
+            int s3 = grid_[height_ - 2][0] + grid_[height_ - 2][1] + grid_[height_ - 1][1];
             if (s3 < Live_min || s3 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().x == width_ && cells_[i]->getPosition().y == height_)
+        else if (cells_[i]->getPosition().x == width_ - 1 && cells_[i]->getPosition().y == height_ - 1)
         {
-            int s4 = grid_[height_ - 1][width_ - 1] + grid_[height_][width_ - 1] + grid_[height_ - 1][width_];
+            int s4 = grid_[height_ - 1][width_ - 1] + grid_[height_ - 2][width_ - 1] + grid_[height_ - 1][width_ - 2];
             if (s4 < Live_min || s4 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().y == 0 && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_)
+        else if (cells_[i]->getPosition().y == 0 && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_ - 1)
         {
             int s5 = grid_[0][cells_[i]->getPosition().x - 1] + grid_[0][cells_[i]->getPosition().x + 1] + grid_[1][cells_[i]->getPosition().x - 1] + grid_[1][cells_[i]->getPosition().x] + grid_[1][cells_[i]->getPosition().x + 1];
             if (s5 < Live_min || s5 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().y == height_ && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().y < width_)
+        else if (cells_[i]->getPosition().y == height_ - 1 && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().y < width_ - 1)
         {
-            int s6 = grid_[height_][cells_[i]->getPosition().x - 1] + grid_[height_][cells_[i]->getPosition().x + 1] + grid_[height_ - 1][cells_[i]->getPosition().x - 1] + grid_[height_ - 1][cells_[i]->getPosition().x] + grid_[height_ - 1][cells_[i]->getPosition().x + 1];
+            int s6 = grid_[height_ - 1][cells_[i]->getPosition().x - 1] + grid_[height_ - 1][cells_[i]->getPosition().x + 1] + grid_[height_ - 2][cells_[i]->getPosition().x - 1] + grid_[height_ - 2][cells_[i]->getPosition().x] + grid_[height_ - 2][cells_[i]->getPosition().x + 1];
             if (s6 < Live_min || s6 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_)
+        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_ - 1)
         {
-            int s7 = grid_[cells_[i]->getPosition().y - 1][0] + grid_[cells_[i]->getPosition().y - 1][1] + grid_[cells_[i]->getPosition().y][1] + grid_[cells_[i]->getPosition().y + 1][0] + grid_[cells_[i]->getPosition().y + 1][1];
+            int s7 = grid_[cells_[i]->getPosition().y - 1][0] + grid_[cells_[i]->getPosition().y - 1][1] + grid_[cells_[i]->getPosition().y][1] + grid_[cells_[i]->getPosition().y + 1][1] + grid_[cells_[i]->getPosition().y + 1][0];
             if (s7 < Live_min || s7 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().x == width_ && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_)
+        else if (cells_[i]->getPosition().x == width_ - 1 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_ - 1)
         {
-            int s8 = grid_[cells_[i]->getPosition().y - 1][width_] + grid_[cells_[i]->getPosition().y - 1][width_ - 1] + grid_[cells_[i]->getPosition().y][width_ - 1] + grid_[cells_[i]->getPosition().y + 1][width_ - 1] + grid_[cells_[i]->getPosition().y + 1][width_];
+            int s8 = grid_[cells_[i]->getPosition().y - 1][width_ - 1] + grid_[cells_[i]->getPosition().y - 1][width_ - 2] + grid_[cells_[i]->getPosition().y][width_ - 1] + grid_[cells_[i]->getPosition().y + 1][width_ - 2] + grid_[cells_[i]->getPosition().y + 1][width_ - 1];
             if (s8 < Live_min || s8 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
-        else if (cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_ && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_)
+        else if (cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_ - 1 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_ - 1)
         {
             int s9 = grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x] + grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x + 1] +
                      grid_[cells_[i]->getPosition().y][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y][cells_[i]->getPosition().x + 1] +
                      grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x] + grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x + 1];
             if (s9 < Live_min || s9 > Live_max)
             {
-                cells_.erase(cells_.begin() + i);
+                removeCell(cells_[i]->getPosition());
             }
         }
     }
@@ -183,7 +185,7 @@ void GameEnvironment::update()
                         {
                             continue;
                         }
-                        if (i + m >= 0 && i + m < height_ && j + n >= 0 && j + n < width_)
+                        if (i + m >= 0 && i + m < height_ - 1 && j + n >= 0 && j + n < width_ - 1)
                         {
                             if (grid_[i + m][j + n])
                             {
@@ -194,24 +196,7 @@ void GameEnvironment::update()
                 }
                 if (s >= Breed_min && s <= Breed_max)
                 {
-                    Position pos(j, i);
-                    if (cells_.size() == 0)
-                    {
-                        cells_.emplace_back(std::make_shared<Cell>(0, pos));
-                    }
-                    else
-                    {
-                        long long maxId = cells_[0]->getId();
-                        for (int k = 0; k < cells_.size(); k++)
-                        {
-                            if (cells_[k]->getId() > maxId)
-                            {
-                                maxId = cells_[k]->getId();
-                            }
-                        }
-                        cells_.emplace_back(std::make_shared<Cell>(maxId + 1, pos));
-                    }
-                    grid_[i][j] = true;
+                    setCell(Position{j, i});
                 }
             }
         }
@@ -265,6 +250,42 @@ void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
                 cells_[i]->setPosition(Position{pos.x + 1, pos.y});
                 grid_[pos.y][pos.x] = false;
                 grid_[pos.y][pos.x + 1] = true;
+            }
+            break;
+        case 4:
+            // 左上
+            if (isValidPosition(Position{pos.x - 1, pos.y - 1}) && isPositionEmpty(Position{pos.x - 1, pos.y - 1}))
+            {
+                cells_[i]->setPosition(Position{pos.x - 1, pos.y - 1});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y - 1][pos.x - 1] = true;
+            }
+            break;
+        case 5:
+            // 右上
+            if (isValidPosition(Position{pos.x + 1, pos.y - 1}) && isPositionEmpty(Position{pos.x + 1, pos.y - 1}))
+            {
+                cells_[i]->setPosition(Position{pos.x + 1, pos.y - 1});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y - 1][pos.x + 1] = true;
+            }
+            break;
+        case 6:
+            // 左下
+            if (isValidPosition(Position{pos.x - 1, pos.y + 1}) && isPositionEmpty(Position{pos.x - 1, pos.y + 1}))
+            {
+                cells_[i]->setPosition(Position{pos.x - 1, pos.y + 1});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y + 1][pos.x - 1] = true;
+            }
+            break;
+        case 7:
+            // 右下
+            if (isValidPosition(Position{pos.x + 1, pos.y + 1}) && isPositionEmpty(Position{pos.x + 1, pos.y + 1}))
+            {
+                cells_[i]->setPosition(Position{pos.x + 1, pos.y + 1});
+                grid_[pos.y][pos.x] = false;
+                grid_[pos.y + 1][pos.x + 1] = true;
             }
             break;
         case 8:
