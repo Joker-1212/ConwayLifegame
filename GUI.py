@@ -11,6 +11,7 @@ import sys
 import subprocess
 import time
 import json
+import torch
 from config import Config
 
 class GUI:
@@ -26,6 +27,7 @@ class GUI:
         self.edit_mode = True
         self.show_grid_line = True
         self.cell_size = 8
+        self.training_auto = False
 
         self.log_queue = queue.Queue()
         self.gui_ready = False
@@ -170,7 +172,7 @@ class GUI:
                     with dpg.collapsing_header(label="Auto Training"):
                         dpg.add_text("One-Click Training")
                         dpg.add_button(label="Start Auto Training", callback=self.auto_training)
-                        dpg.add_progress_bar(label="Training Progress", default_value=0.0, tag="training progress")
+                        dpg.add_progress_bar(label="Training Progress", default_value=0.0, tag="training_progress")
                         dpg.add_text("Status: Ready", tag="training_status")
 
                     # Statistics Display
@@ -276,7 +278,69 @@ class GUI:
             self.log(f"Error applying config: {e}", "ERROR")
 
     def auto_training(self):
-        pass
+        """自动训练"""
+        if self.training_auto:
+            self.log("Auto training is already running", "WARNING")
+            return
+        
+        try:
+            # 更新训练状态
+            self.training_auto = True
+            dpg.set_value("training_status", "Status: Training automatically...")
+            dpg.set_value("training_progress", 0.0)
+
+            # 启动训练线程
+            training_thread = threading.Thread(target=self.run_training, daemon=True)
+            training_thread.start()
+            self.log("Auto training started")
+        except Exception as e:
+            self.log(f"Error starting auto training: {e}", "ERROR")
+            self.training_auto = False
+            dpg.set_value("training_status", "Status: Ready")
+
+    def run_training(self):
+        """运行训练脚本"""
+        try:
+            self.log("Starting trainging process...")
+
+            # 使用 subprocess 启动训练脚本
+            process = subprocess.Popen(
+                [sys.executable, "train.py"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True
+            )
+
+            # 获取训练输出
+            for line in process.stdout:
+                self.log(f"Training: {line.strip()}", "DEBUG")
+
+                # 一个简单的进度解析:
+                if "Episode" in line:
+                    try:
+                        parts = line.strip().split()
+                        episode_num = int(parts[1])
+                        total_episodes = int(parts[3])
+                        progress = episode_num / total_episodes
+                        dpg.set_value("training_progress", progress)
+                    except Exception as e:
+                        self.log(f"Error parsing training progress: {e}", "ERROR")
+                    
+            process.wait()
+
+            if process.returncode == 0:
+                self.log("Training process completed successfully")
+                dpg.set_value("training_status", "Status: Training completed")
+                dpg.set_value("Trainging progress", 0.0)
+            else:
+                self.log("Training process failed", "ERROR")
+                dpg.set_value("training_status", "Status: Training failed")
+        
+        except Exception as e:
+            self.log(f"Error running training: {e}", "ERROR")
+        
+        finally:
+            self.training_auto = False
 
     def grid_click_callback(self, sender):
         """
@@ -424,13 +488,32 @@ ENV_HEIGHT = {env_height}
             self.log(f"Error reloading rules: {e}", "ERROR")
 
     def load_model(self):
-        pass
+        """加载已训练模型"""
+        try:
+            model_path = dpg.get_value("model_path_input")
+
+            if not os.path.isfile(model_path):
+                self.log(f"Model file not found: {model_path}", "ERROR")
+                return
+            
+            state_dict = torch.load(model_path)
+            self.agent.model.load_state_dict(state_dict)
+
+            self.log(f"Model loaded from {model_path}")
+        except Exception as e:
+            self.log(f"Error loading model: {e}", "ERROR")
 
     def start_training(self):
-        pass
+        """开始训练模型"""
+        self.is_training = True
+        if not self.is_running:
+            self.start_simulation()
+        self.log("Training mode started")
 
     def stop_training(self):
-        pass
+        """停止模型训练"""
+        self.is_training = False
+        self.log("Training mode stopped")
 
     def change_update_interval(self, sender, app_data):
         """
