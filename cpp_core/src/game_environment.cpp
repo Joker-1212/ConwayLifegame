@@ -42,7 +42,7 @@ void GameEnvironment::initializeRandom(int num_cells)
 
     int cells_placed = 0;
     int attempts = 0;
-    const int max_attempts = num_cells * 10; // 每个细胞最多尝试10次
+    const int max_attempts = num_cells * 10000; // 每个细胞最多尝试10000次
 
     while (cells_placed < num_cells && attempts < max_attempts)
     {
@@ -70,139 +70,118 @@ void GameEnvironment::initializeRandom(int num_cells)
 }
 void GameEnvironment::update()
 {
-    // 若所有细胞都静止，更新游戏状态，随机增加能量，增加年龄
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    // 创建下一代状态记录
+    std::vector<std::vector<bool>> nextState(height_, std::vector<bool>(width_, false));
+
+    // 基于当前状态计算下一代（不立即修改）
     for (int i = 0; i < cells_.size(); i++)
     {
         if (cells_[i]->isAlive())
         {
-            // 随机增加能量
+            int x = cells_[i]->getPosition().x;
+            int y = cells_[i]->getPosition().y;
+            int liveNeighbors = 0;
 
+            // 计算活邻居数量
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if (dx == 0 && dy == 0)
+                        continue;
+
+                    int nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && nx < width_ && ny >= 0 && ny < height_)
+                    {
+                        if (grid_[ny][nx])
+                            liveNeighbors++;
+                    }
+                }
+            }
+
+            // 应用康威规则决定下一代状态
+            if (liveNeighbors >= Live_min && liveNeighbors <= Live_max)
+            {
+                nextState[y][x] = true; // 存活
+            }
+            else
+            {
+                nextState[y][x] = false; // 死亡
+            }
+        }
+    }
+
+    // 处理死细胞的繁殖
+    for (int y = 0; y < height_; y++)
+    {
+        for (int x = 0; x < width_; x++)
+        {
+            if (!grid_[y][x])
+            { // 当前是死细胞
+                int liveNeighbors = 0;
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        if (dx == 0 && dy == 0)
+                            continue;
+
+                        int nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < width_ && ny >= 0 && ny < height_)
+                        {
+                            if (grid_[ny][nx])
+                                liveNeighbors++;
+                        }
+                    }
+                }
+
+                // 繁殖规则
+                if (liveNeighbors >= Breed_min && liveNeighbors <= Breed_max)
+                {
+                    nextState[y][x] = true;
+                }
+            }
+        }
+    }
+
+    // 同步更新所有细胞状态
+    for (int y = 0; y < height_; y++)
+    {
+        for (int x = 0; x < width_; x++)
+        {
+            if (nextState[y][x] != grid_[y][x])
+            {
+                if (nextState[y][x])
+                {
+                    setCell(Position{x, y});
+                }
+                else
+                {
+                    removeCell(Position{x, y});
+                }
+            }
+        }
+    }
+
+    // 能量和年龄更新逻辑
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        if (cells_[i]->isAlive())
+        {
             double prob = dist(gen);
             if (prob < Restore_prob)
             {
                 double new_energy = cells_[i]->getEnergy() + Restore_value;
                 cells_[i]->setEnergy(new_energy);
             }
-            // 增加年龄
             cells_[i]->increaseAge();
         }
     }
-    // 对于有细胞的位置，根据邻居细胞数量决定存活与否
-    for (int i = 0; i < cells_.size(); i++)
-    {
-
-        if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y == 0)
-        {
-            int s1 = grid_[1][0] + grid_[0][1] + grid_[1][1];
-            if (s1 < Live_min || s1 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().x == width_ - 1 && cells_[i]->getPosition().y == 0)
-        {
-            int s2 = grid_[0][width_ - 2] + grid_[1][width_ - 2] + grid_[1][width_ - 1];
-            if (s2 < Live_min || s2 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y == height_ - 1)
-        {
-            int s3 = grid_[height_ - 2][0] + grid_[height_ - 2][1] + grid_[height_ - 1][1];
-            if (s3 < Live_min || s3 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().x == width_ - 1 && cells_[i]->getPosition().y == height_ - 1)
-        {
-            int s4 = grid_[height_ - 1][width_ - 1] + grid_[height_ - 2][width_ - 1] + grid_[height_ - 1][width_ - 2];
-            if (s4 < Live_min || s4 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().y == 0 && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_ - 1)
-        {
-            int s5 = grid_[0][cells_[i]->getPosition().x - 1] + grid_[0][cells_[i]->getPosition().x + 1] + grid_[1][cells_[i]->getPosition().x - 1] + grid_[1][cells_[i]->getPosition().x] + grid_[1][cells_[i]->getPosition().x + 1];
-            if (s5 < Live_min || s5 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().y == height_ - 1 && cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().y < width_ - 1)
-        {
-            int s6 = grid_[height_ - 1][cells_[i]->getPosition().x - 1] + grid_[height_ - 1][cells_[i]->getPosition().x + 1] + grid_[height_ - 2][cells_[i]->getPosition().x - 1] + grid_[height_ - 2][cells_[i]->getPosition().x] + grid_[height_ - 2][cells_[i]->getPosition().x + 1];
-            if (s6 < Live_min || s6 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().x == 0 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_ - 1)
-        {
-            int s7 = grid_[cells_[i]->getPosition().y - 1][0] + grid_[cells_[i]->getPosition().y - 1][1] + grid_[cells_[i]->getPosition().y][1] + grid_[cells_[i]->getPosition().y + 1][1] + grid_[cells_[i]->getPosition().y + 1][0];
-            if (s7 < Live_min || s7 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().x == width_ - 1 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_ - 1)
-        {
-            int s8 = grid_[cells_[i]->getPosition().y - 1][width_ - 1] + grid_[cells_[i]->getPosition().y - 1][width_ - 2] + grid_[cells_[i]->getPosition().y][width_ - 1] + grid_[cells_[i]->getPosition().y + 1][width_ - 2] + grid_[cells_[i]->getPosition().y + 1][width_ - 1];
-            if (s8 < Live_min || s8 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-        else if (cells_[i]->getPosition().x > 0 && cells_[i]->getPosition().x < width_ - 1 && cells_[i]->getPosition().y > 0 && cells_[i]->getPosition().y < height_ - 1)
-        {
-            int s9 = grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x] + grid_[cells_[i]->getPosition().y - 1][cells_[i]->getPosition().x + 1] +
-                     grid_[cells_[i]->getPosition().y][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y][cells_[i]->getPosition().x + 1] +
-                     grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x - 1] + grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x] + grid_[cells_[i]->getPosition().y + 1][cells_[i]->getPosition().x + 1];
-            if (s9 < Live_min || s9 > Live_max)
-            {
-                removeCell(cells_[i]->getPosition());
-            }
-        }
-    }
-    // 对于空位，根据邻居数量决定是否繁殖新细胞
-    for (int i = 0; i < height_; i++)
-    {
-        for (int j = 0; j < width_; j++)
-        {
-            if (!grid_[i][j])
-            {
-                int s = 0;
-                for (int m = -1; m <= 1; m++)
-                {
-                    for (int n = -1; n <= 1; n++)
-                    {
-                        if (m == 0 && n == 0)
-                        {
-                            continue;
-                        }
-                        if (i + m >= 0 && i + m < height_ - 1 && j + n >= 0 && j + n < width_ - 1)
-                        {
-                            if (grid_[i + m][j + n])
-                            {
-                                s++;
-                            }
-                        }
-                    }
-                }
-                if (s >= Breed_min && s <= Breed_max)
-                {
-                    setCell(Position{j, i});
-                }
-            }
-        }
-    }
 }
-
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 {
     // 根据移动列表更新状态（移动列表和细胞列表中的细胞一一对应）
