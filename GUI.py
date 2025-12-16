@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
-from agents.cell_agent import CellAgent
-from models.policy_network import DQNetwork
-from environment.game_env import SmartGameEnv
+from PyModels.Agent.cell_agent import CellAgent
+from PyModels.Models.policy_network import DQNetwork
+from PyModels.Environment.game_env import SmartGameEnv
 import datetime
 import train
 import queue
@@ -12,7 +12,7 @@ import subprocess
 import time
 import json
 import torch
-from config import Config
+from PyModels.Configs.config import Config
 
 class GUI:
     def __init__(self):
@@ -800,6 +800,7 @@ ENV_HEIGHT = {env_height}
         """
         启动游戏
         """
+        os.path.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.log("Game Starting")
         if not self.initialize_environment():
             self.log("Failed to initialize environment.")
