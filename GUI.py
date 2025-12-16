@@ -25,11 +25,11 @@ class GUI:
         self.is_running = False
         self.is_training = False
         self.size = 8
-        self.update_interval = 0.1
+        self.update_interval = 1
         self.debug = False
         self.step_count = 0
         self.edit_mode = True
-        self.show_grid_line = True
+        self.show_grid_line = False
         self.cell_size = 8
         self.training_auto = False
 
@@ -731,15 +731,20 @@ ENV_HEIGHT = {env_height}
         if self.env is not None:
             try:
                 state = self.env._get_observation()
-                if state.size > 0:
+                if self.ai and state.size > 0:
                     epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
                     actions = self.agent.act(state, epsilon=epsilon)
+                elif self.ai:
+                    actions = None
                 else:
                     actions = None
+                    self.log("No cells alive", "DEBUG")
 
                 next_state, reward, done, info = self.env.step(actions)
                 self.stats['reward'] += reward
                 self.step_count += 1
+
+                self.stats['average_reward'] = self.stats['average_reward'] * 0.95 + reward * 0.05
 
                 if done:
                     self.stats['episode'] += 1
@@ -824,7 +829,7 @@ ENV_HEIGHT = {env_height}
             dpg.set_value("stat_density", f"Density: {self.stats['density']:.3f}")
             dpg.set_value("stat_episode", f"Episode: {self.stats['episode']}")
             dpg.set_value("stat_reward", f"Reward: {self.stats['reward']:.3f}")
-            dpg.set_value("stat_steps", f"Steps: {self.stats['total_steps']}")
+            dpg.set_value("stat_steps", f"Steps: {self.step_count}")
             dpg.set_value("stat_steps_per_sec", f"Steps/Sec: {self.stats['steps_per_sec']:.1f}")
             dpg.set_value("stat_avg_reward", f"Avg Reward: {self.stats['average_reward']:.3f}")
             dpg.set_value("stat_loss", f"Training Loss: {self.stats['training_loss']:.3f}")
@@ -976,6 +981,7 @@ ENV_HEIGHT = {env_height}
                     if done:
                         self.stats['episode'] += 1
                         self.log(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
+                        self.step_count = 0
                     self.draw_cells()
                     self.update_statistics()
                     time.sleep(self.update_interval)
