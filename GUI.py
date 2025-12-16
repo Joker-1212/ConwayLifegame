@@ -327,12 +327,16 @@ class GUI:
         try:
             self.log("Starting trainging process...")
 
+            env_var = os.environ.copy()
+            env_var['PYTHONUNBUFFERED'] = '1'
             # 使用 subprocess 启动训练脚本
             process = subprocess.Popen(
                 [sys.executable, "train.py"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                universal_newlines=True
+                universal_newlines=True,
+                env=env_var,
+                bufsize=1
             )
 
             # 获取训练输出
@@ -343,8 +347,8 @@ class GUI:
                 if "Episode" in line:
                     try:
                         parts = line.strip().split()
-                        episode_num = int(parts[1])
-                        total_episodes = int(parts[3])
+                        episode_num = int(parts[1][:-1])
+                        total_episodes = self.configs["MAX_EPISODES"]
                         progress = episode_num / total_episodes
                         dpg.set_value("training_progress", progress)
                     except Exception as e:
