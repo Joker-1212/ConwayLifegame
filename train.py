@@ -7,9 +7,11 @@ from models.policy_network import DQNetwork
 from agents.cell_agent import CellAgent
 from utils.experience_replay import ExperienceReplay
 from config import Config
+import os
 
 def train():
     # 初始化环境
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     configs = Config()
 
