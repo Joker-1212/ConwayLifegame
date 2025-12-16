@@ -32,7 +32,7 @@ public:
      * @brief 构造函数
      * @param config_file 配置文件路径，默认为"config.txt"
      */
-    ConfigParser(const std::string &config_file = "../config.txt");
+    ConfigParser(const std::string &config_file = "config.txt");
 
     // 以下方法在 PyBind11 绑定中被直接调用
 
