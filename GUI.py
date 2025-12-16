@@ -2,6 +2,10 @@ import dearpygui.dearpygui as dpg
 from Module.Agent.cell_agent import CellAgent
 from Module.Models.policy_network import DQNetwork
 from Module.Environment.game_env import SmartGameEnv
+from Module.Utils.experience_replay import ExperienceReplay
+import torch.optim as optim
+import torch.nn.functional as F
+import numpy as np
 import datetime
 import train
 import queue
@@ -115,6 +119,11 @@ class GUI:
                             default_value=self.show_grid_line,
                             callback=self.toggle_grid_line
                         )
+                        dpg.add_checkbox(
+                            label="Enable AI",
+                            default_value=self.show_grid_line,
+                            callback=self.toggle_ai
+                        )
                         dpg.add_button(label="Export State", callback=self.export_state)
                         dpg.add_button(label="Force GC", callback=self.force_garbage_collection)
                         dpg.add_button(label="Clear Log", callback=self.clear_log)
@@ -140,7 +149,6 @@ class GUI:
                     # Training Control
                     with dpg.collapsing_header(label="Training Control", default_open=False):
                         dpg.add_button(label="Start Training", callback=self.start_training)
-                        dpg.add_button(label="Stop Training", callback=self.stop_training)
                         dpg.add_slider_float(
                             label="Epsilon",
                             default_value=0.1,
@@ -575,15 +583,80 @@ ENV_HEIGHT = {env_height}
 
     def start_training(self):
         """开始训练模型"""
+        state_size = self.env.state_size
+        action_size = self.env.action_size
+        policy_net = self.agent.model
+        target_net = DQNetwork(state_size, action_size, self.configs["HIDDEN_SIZE"])
+        target_net.load_state_dict(policy_net.state_dict())
         self.is_training = True
-        if not self.is_running:
-            self.start_simulation()
-        self.log("Training mode started")
+        optimizer = optim.Adam(policy_net.parameters(), lr=self.configs["LEARNING_RATE"])
+        replay_buffer = ExperienceReplay(self.configs["BUFFER_SIZE"])
+    
+        epsilon = self.configs["EPSILON_START"]
+        episode_rewards = []
 
-    def stop_training(self):
-        """停止模型训练"""
-        self.is_training = False
-        self.log("Training mode stopped")
+        for episode in range(self.configs["MAX_EPISODES"]):
+            state = self.env.reset(int(self.configs["INITIAL_CELL_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
+            total_reward = 0
+            steps = 0
+
+            while steps < self.configs["MAX_STEPS"]:
+                actions = self.agent.act(state, epsilon)
+
+                next_state, reward, done, _ = self.env.step(actions, steps)
+
+                if len(state) > 0:
+                    for i in range(len(state)):
+                        replay_buffer.push(
+                            state[i], actions[i], reward,
+                            next_state[i] if i < len(next_state) else np.zeros(state_size), done
+                        )
+                
+                state = next_state
+                total_reward += reward
+                steps += 1
+
+                if len(replay_buffer) >= self.configs["BATCH_SIZE"]:
+                    self.train_model(policy_net, target_net, optimizer, replay_buffer)
+                
+                if done:
+                    break
+            
+            if episode % self.configs["TARGET_UPDATE"] == 0:
+                target_net.load_state_dict(policy_net.state_dict())
+            
+            epsilon = max(self.configs["EPSILON_END"], epsilon * self.configs["EPSILON_DECAY"])
+
+            episode_rewards.append(total_reward)
+            self.log(f"Episode {episode}, Reward: {total_reward:.3f}, Population: {self.env.get_population()}, Epsilon: {epsilon:.3f}")
+            
+        torch.save(policy_net.state_dict(), "trained_model.pth")
+    
+    def train_model(self, policy_net, target_net, optimizer, replay_buffer):
+        """
+        训练 policy_network
+        
+        :param policy_net: 要训练的网络
+        :param replay_buffer: 经验回放缓冲区
+        """
+        state, actions, rewards, next_state, done = replay_buffer.sample(self.configs["BATCH_SIZE"])
+
+        state = torch.FloatTensor(state)
+        actions = torch.LongTensor(actions)
+        rewards = torch.FloatTensor(rewards)
+        next_states = torch.FloatTensor(next_states)
+        done = torch.BoolTensor(done)
+
+        current_q = policy_net(state).gather(1, actions.unsqueeze(1))
+
+        next_q = target_net(next_state).max(1)[0].detach()
+        target_q = rewards + (self.configs["GAMMA"] * next_q * (~done))
+
+        loss = F.mse_loss(current_q.squeeze(), target_q)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
     def change_update_interval(self, sender, app_data):
         """
