@@ -59,7 +59,7 @@ def train():
             actions = agent.act(state, epsilon)
             
             # 执行动作
-            next_state, reward, done, _ = env.step(actions)
+            next_state, reward, done, _ = env.step(actions, steps)
             
             # 存储经验
             # 注意：这里需要为每个细胞单独存储经验
