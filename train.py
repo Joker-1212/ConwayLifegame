@@ -2,11 +2,11 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
-from PyModels.Environment.game_env import SmartGameEnv
-from PyModels.Models.policy_network import DQNetwork
-from PyModels.Agent.cell_agent import CellAgent
-from PyModels.Utils.experience_replay import ExperienceReplay
-from PyModels.Configs.config import Config
+from Module.Environment.game_env import SmartGameEnv
+from Module.Models.policy_network import DQNetwork
+from Module.Agent.cell_agent import CellAgent
+from Module.Utils.experience_replay import ExperienceReplay
+from Module.Configs.config import Config
 import os
 
 def train():

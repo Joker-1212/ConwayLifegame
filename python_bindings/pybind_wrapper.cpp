@@ -205,67 +205,6 @@ public:
     }
 };
 
-// 配置解析器包装类
-class PyConfigParser
-{
-private:
-    ConfigParser parser_;
-
-public:
-    PyConfigParser(const std::string &config_file = "config.txt")
-        : parser_(config_file) {}
-
-    bool load_config()
-    {
-        return parser_.loadConfig();
-    }
-
-    bool save_config()
-    {
-        // return parser_.saveConfig();
-    }
-
-    int get_int(const std::string &key, int default_value)
-    {
-        return parser_.getInt(key, default_value);
-    }
-
-    double get_double(const std::string &key, double default_value)
-    {
-        return parser_.getDouble(key, default_value);
-    }
-
-    std::string get_string(const std::string &key, const std::string &default_value)
-    {
-        // return parser_.getString(key, default_value);
-    }
-
-    void set_int(const std::string &key, int value)
-    {
-        parser_.setInt(key, value);
-    }
-
-    void set_double(const std::string &key, double value)
-    {
-        parser_.setDouble(key, value);
-    }
-
-    void set_string(const std::string &key, const std::string &value)
-    {
-        // parser_.setString(key, value);
-    }
-
-    bool has_key(const std::string &key)
-    {
-        return parser_.hasKey(key);
-    }
-
-    void print_all()
-    {
-        parser_.printAll();
-    }
-};
-
 PYBIND11_MODULE(smart_life_core, m)
 {
     m.doc() = "Smart Game of Life - PyBind11 Bindings";
@@ -329,36 +268,4 @@ PYBIND11_MODULE(smart_life_core, m)
         .def("set_cell", &PyGameEnvironment::set_cell,
              py::arg("x"), py::arg("y"),
              "Set a cell at the specified position");
-
-    // 绑定 ConfigParser 类
-    py::class_<PyConfigParser>(m, "ConfigParser")
-        .def(py::init<>())
-        .def(py::init<std::string>(), py::arg("config_file"))
-        .def("load_config", &PyConfigParser::load_config,
-             "Load configuration from file")
-        /*.def("save_config", &PyConfigParser::save_config,
-             "Save configuration to file")*/
-        .def("get_int", &PyConfigParser::get_int,
-             py::arg("key"), py::arg("default_value"),
-             "Get integer configuration value")
-        .def("get_double", &PyConfigParser::get_double,
-             py::arg("key"), py::arg("default_value"),
-             "Get double configuration value")
-        /*.def("get_string", &PyConfigParser::get_string,
-             py::arg("key"), py::arg("default_value"),
-             "Get string configuration value")*/
-        .def("set_int", &PyConfigParser::set_int,
-             py::arg("key"), py::arg("value"),
-             "Set integer configuration value")
-        .def("set_double", &PyConfigParser::set_double,
-             py::arg("key"), py::arg("value"),
-             "Set double configuration value")
-        /*.def("set_string", &PyConfigParser::set_string,
-             py::arg("key"), py::arg("value"),
-             "Set string configuration value")*/
-        .def("has_key", &PyConfigParser::has_key,
-             py::arg("key"),
-             "Check if configuration key exists")
-        .def("print_all", &PyConfigParser::print_all,
-             "Print all configuration values");
 }

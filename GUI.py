@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
-from PyModels.Agent.cell_agent import CellAgent
-from PyModels.Models.policy_network import DQNetwork
-from PyModels.Environment.game_env import SmartGameEnv
+from Module.Agent.cell_agent import CellAgent
+from Module.Models.policy_network import DQNetwork
+from Module.Environment.game_env import SmartGameEnv
 import datetime
 import train
 import queue
@@ -12,7 +12,7 @@ import subprocess
 import time
 import json
 import torch
-from PyModels.Configs.config import Config
+from Module.Configs.config import Config
 
 class GUI:
     def __init__(self):
