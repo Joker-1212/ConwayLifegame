@@ -42,6 +42,17 @@ VISION = 5
 
 # Cell death probability
 DEATH_RATE = 0.1
+
+# Cell energy consume
+ENERGY_CONSUMPTION = 0.1
+
+# Cell energy restore rate
+RESTORE_PROB = 0.1
+RESTORE_VALUE = 0.2
+
+# Grid size
+ENV_WIDTH = 100
+ENV_HEIGHT = 100
 """
         with open(config_file, 'w') as f:
             f.write(default_config)

@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from Module.Configs.config import Config
 
 try:
     import smart_life_core
@@ -29,8 +30,9 @@ def test_basic_functionality():
             print(f"Step {i+1}: Population={pop}, Density={density:.3f}")
         
         # 测试配置
-        config = smart_life_core.ConfigParser()
-        vision = config.get_int("Vision", 5)
+        config = Config()
+        config.load_from_file()
+        vision = config["VISION"]
         print(f"Vision from config: {vision}")
         
         print("Basic functionality test passed")

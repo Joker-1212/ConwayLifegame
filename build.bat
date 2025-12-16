@@ -109,7 +109,8 @@ echo Build completed successfully!
 echo ========================================
 echo.
 echo You can now run:
-echo   python test_windows.py
-echo   python train.py
-echo   python evaluate.py
+echo   python .\test_windows.py
+echo   python .\GUI.py
+echo   python .\train.py
+echo   python .\evaluate.py
 echo.

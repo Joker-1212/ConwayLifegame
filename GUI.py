@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
-from PyModels.Agent.cell_agent import CellAgent
-from PyModels.Models.policy_network import DQNetwork
-from PyModels.Environment.game_env import SmartGameEnv
+from Module.Agent.cell_agent import CellAgent
+from Module.Models.policy_network import DQNetwork
+from Module.Environment.game_env import SmartGameEnv
 import datetime
 import train
 import queue
@@ -12,7 +12,7 @@ import subprocess
 import time
 import json
 import torch
-from PyModels.Configs.config import Config
+from Module.Configs.config import Config
 
 class GUI:
     def __init__(self):
@@ -32,6 +32,7 @@ class GUI:
         self.log_queue = queue.Queue()
         self.gui_ready = False
         self.debug_mode = True
+        self.cell_id_existed_on_grid = set()
 
         self.configs = Config()
         self.last_update_time = time.time()
@@ -125,7 +126,7 @@ class GUI:
                             label="Update Interval",
                             default_value=self.update_interval,
                             min_value=0.01,
-                            max_value=1.0,
+                            max_value=10.0,
                             callback=self.change_update_interval
                         )
                         dpg.add_slider_int(
@@ -167,6 +168,7 @@ class GUI:
                         dpg.add_input_float(label="Energy Gain\nProbability", default_value=self.configs['RESTORE_PROB'], tag="rule_restore_prob")
                         dpg.add_button(label="Apply Rules", callback=self.apply_rules)
                         dpg.add_button(label="Reload Rules", callback=self.reload_rules)
+                        dpg.add_button(label="Save Rules", callback=self.save_rules)
                     
                     # Training Function
                     with dpg.collapsing_header(label="Auto Training"):
@@ -251,6 +253,11 @@ class GUI:
         """
         应用新的环境配置
         """
+        if self.is_running:
+            self.log("Cannot apply config while simulating, please pause the simulation first", "WARNING")
+            return
+
+
         try:
             new_width = dpg.get_value("config_width")
             new_height = dpg.get_value("config_height")
@@ -379,15 +386,104 @@ class GUI:
             else:
                 self.env.remove_cell(rx, ry)
                 self.log(f"Cell removed at ({rx}, {ry})")
-            self.draw_grid()
+            self.draw_cells()
             self.update_statistics()
         except Exception as e:
             self.log(f"Err handling grid click: {e}", "ERROR")
 
     def apply_rules(self):
         """应用新的游戏规则"""
+        if self.is_running:
+            self.log("Cannot apply rules while simulating, please pause the simulation first", "WARNING")
+            return
+        
         try:
             # 获取新的规则值
+            live_min = dpg.get_value("rule_live_min")
+            live_max = dpg.get_value("rule_live_max")
+            breed_min = dpg.get_value("rule_breed_min")
+            breed_max = dpg.get_value("rule_breed_max")
+            vision = dpg.get_value("rule_vision")
+            death_rate = dpg.get_value("rule_death_rate")
+            energy_consumption = dpg.get_value("rule_energy_consumption")
+            restore_prob = dpg.get_value("rule_restore_prob")
+            restore_value = dpg.get_value("rule_restore_value")
+            env_width = dpg.get_value("config_width")
+            env_height = dpg.get_value("config_height")
+
+            if (live_min < 0 or live_max < live_min or live_max > 8):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (breed_max < breed_min or breed_min < 0 or breed_max > 8):
+                return
+            if (vision < 1 or vision > 8):
+                return
+            if (death_rate < 0.0 or death_rate >= 1.0):
+                return
+            if (energy_consumption < 0.0):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (restore_prob < 0.0 or restore_prob > 1.0 or restore_value < 0.0):
+                self.log("Fail applying rules", "ERROR")
+                return
+            if (env_height <= 0 or env_width <= 0 or env_height > 200 or env_width > 200):
+                self.log("Fail applying rules", "ERROR")
+                return
+            
+            self.configs["LIVE_MIN"] = live_min
+            self.configs["LIVE_MAX"] = live_max
+            self.configs["BREED_MIN"] = breed_min
+            self.configs["BREED_MAX"] = breed_max
+            self.configs["VISION"] = vision
+            self.configs["DEATH_RATE"] = death_rate
+            self.configs["ENERGY_CONSUMPTION"] = energy_consumption
+            self.configs["RESTORE_PROB"] = restore_prob
+            self.configs["RESTORE_VALUE"] = restore_value
+            self.configs["ENV_WIDTH"] = env_width
+            self.configs["ENV_HEIGHT"] = env_height
+
+            # 重新加载环境以应用新规则
+            self.initialize_environment()
+            self.draw_grid()
+            self.update_statistics()
+            
+            self.log("Environment reloaded with new rules")
+            
+        except Exception as e:
+            self.log(f"Error applying rules: {e}", "ERROR")
+
+    def reload_rules(self):
+        """
+        重新加载规则配置文件
+        """
+        if self.is_running:
+            self.log("Cannot reload rules while simulating, please pause the simulation first", "WARNING")
+            return
+
+        try:
+            self.configs.load_from_file()
+            self.initialize_environment()
+            self.draw_grid()
+            self.update_statistics()
+            dpg.set_value("rule_live_min", self.configs["LIVE_MIN"])
+            dpg.set_value("rule_live_max", self.configs["LIVE_MAX"])
+            dpg.set_value("rule_breed_min", self.configs["BREED_MIN"])
+            dpg.set_value("rule_breed_max", self.configs["BREED_MAX"])
+            dpg.set_value("rule_vision", self.configs["VISION"])
+            dpg.set_value("rule_death_rate", self.configs["DEATH_RATE"])
+            dpg.set_value("rule_energy_consumption", self.configs["ENERGY_CONSUMPTION"])
+            dpg.set_value("rule_restore_prob", self.configs["RESTORE_PROB"])
+            dpg.set_value("rule_restore_value", self.configs["RESTORE_VALUE"])
+
+            self.log("Rules reloaded from config.txt")
+        except Exception as e:
+            self.log(f"Error reloading rules: {e}", "ERROR")
+
+    def save_rules(self):
+        if self.is_running:
+            self.log("Cannot save rules while simulating, please pause the simulation first", "WARNING")
+            return
+        try:
             live_min = dpg.get_value("rule_live_min")
             live_max = dpg.get_value("rule_live_max")
             breed_min = dpg.get_value("rule_breed_min")
@@ -454,38 +550,12 @@ ENV_HEIGHT = {env_height}
                 f.write(config_content)
             
             self.log("Rules updated and saved to config.txt")
-            
-            # 重新加载环境以应用新规则
+            self.configs.load_from_file()
             self.initialize_environment()
             self.draw_grid()
             self.update_statistics()
-            
-            self.log("Environment reloaded with new rules")
-            
         except Exception as e:
-            self.log(f"Error applying rules: {e}", "ERROR")
-
-    def reload_rules(self):
-        """
-        重新加载规则配置文件
-        """
-        try:
-            self.initialize_environment()
-            self.draw_grid()
-            self.update_statistics()
-            dpg.set_value("rule_live_min", self.configs["LIVE_MIN"])
-            dpg.set_value("rule_live_max", self.configs["LIVE_MAX"])
-            dpg.set_value("rule_breed_min", self.configs["BREED_MIN"])
-            dpg.set_value("rule_breed_max", self.configs["BREED_MAX"])
-            dpg.set_value("rule_vision", self.configs["VISION"])
-            dpg.set_value("rule_death_rate", self.configs["DEATH_RATE"])
-            dpg.set_value("rule_energy_consumption", self.configs["ENERGY_CONSUMPTION"])
-            dpg.set_value("rule_restore_prob", self.configs["RESTORE_PROB"])
-            dpg.set_value("rule_restore_value", self.configs["RESTORE_VALUE"])
-
-            self.log("Rules reloaded from config.txt")
-        except Exception as e:
-            self.log(f"Error reloading rules: {e}", "ERROR")
+            self.log(f"Error saving rules: {e}", "ERROR")
 
     def load_model(self):
         """加载已训练模型"""
@@ -588,7 +658,7 @@ ENV_HEIGHT = {env_height}
                 if done:
                     self.stats['episode'] += 1
 
-                self.draw_grid()
+                self.draw_cells()
                 self.update_statistics()
                 self.log(f"Simulation stepped. Total steps: {self.step_count}")
             except Exception as e:
@@ -603,7 +673,7 @@ ENV_HEIGHT = {env_height}
                 self.stats['reward'] = 0.0
                 self.stats['average_reward'] = 0.0
                 self.stats['episode'] = 0
-                self.draw_grid()
+                self.draw_cells()
                 self.update_statistics()
                 self.log("Simulation reset")
             except Exception as e:
@@ -615,7 +685,7 @@ ENV_HEIGHT = {env_height}
         """
         self.show_grid_line = app_data
         self.draw_grid()
-        self.log(f"Grid lines {'showed if app_data else hidden'}")
+        self.log(f"Grid lines {'showed' if app_data else 'hidden'}")
 
     def force_garbage_collection(self):
         """
@@ -641,7 +711,7 @@ ENV_HEIGHT = {env_height}
             try:
                 self.env.reset(0)
                 self.step_count = 0
-                self.draw_grid()
+                self.draw_cells()
                 self.update_statistics()
                 self.log("Grid cleared")
             except Exception as e:
@@ -676,9 +746,8 @@ ENV_HEIGHT = {env_height}
 
     def draw_grid(self):
         """
-        细胞与网格线绘制函数
+        绘制整个界面
         """
-        # self.log("Draw function called", "DEBUG")
         if not dpg.does_alias_exist("grid_drawlist"):
             return
         
@@ -696,16 +765,18 @@ ENV_HEIGHT = {env_height}
         )
 
         # 画细胞
-        for cell in self.env.get_cells():
-            dpg.draw_rectangle(
-                [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
-                [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
-                color=(0, 0, 255, 255),
-                fill=(0, 0, 255, 255),
-                parent="grid_drawlist"
-            )
+        self.draw_cells()
 
         # 画网格线
+        self.draw_grid_line()
+
+    def draw_grid_line(self):
+        """
+        生成网格线
+        """
+        if not dpg.does_alias_exist("grid_drawlist"):
+            return
+        
         if self.show_grid_line:
             grid_color = (255, 255, 255, 50)
 
@@ -730,6 +801,32 @@ ENV_HEIGHT = {env_height}
                     thickness=1,
                     parent='grid_drawlist'
                 )
+
+    def draw_cells(self):
+        """
+        绘制细胞
+        """
+        if not dpg.does_alias_exist("grid_drawlist"):
+            return
+        
+        # 先清空细胞
+        for cell_id in self.cell_id_existed_on_grid:
+            if dpg.does_alias_exist(cell_id):
+                dpg.delete_item(cell_id)
+        
+        self.cell_id_existed_on_grid.clear()
+
+        # 画细胞
+        for cell in self.env.get_cells():
+            dpg.draw_rectangle(
+                [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
+                [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
+                color=(0, 0, 255, 255),
+                fill=(0, 0, 255, 255),
+                parent="grid_drawlist",
+                tag=f"C{cell['id']}"
+            )
+            self.cell_id_existed_on_grid.add(f"C{cell['id']}")
 
     def log(self, message, level="INFO"):
         """
@@ -790,7 +887,7 @@ ENV_HEIGHT = {env_height}
                     if done:
                         self.stats['episode'] += 1
                         self.log(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
-                    self.draw_grid()
+                    self.draw_cells()
                     self.update_statistics()
                 except Exception as e:
                     self.log(f"Error while simulating: {e}", "ERROR")
@@ -800,7 +897,7 @@ ENV_HEIGHT = {env_height}
         """
         启动游戏
         """
-        os.path.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.log("Game Starting")
         if not self.initialize_environment():
             self.log("Failed to initialize environment.")
