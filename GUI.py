@@ -37,6 +37,7 @@ class GUI:
         self.gui_ready = False
         self.debug_mode = True
         self.cell_id_existed_on_grid = set()
+        self.ai = True
 
         self.configs = Config()
         self.last_update_time = time.time()
@@ -121,7 +122,7 @@ class GUI:
                         )
                         dpg.add_checkbox(
                             label="Enable AI",
-                            default_value=self.show_grid_line,
+                            default_value=self.ai,
                             callback=self.toggle_ai
                         )
                         dpg.add_button(label="Export State", callback=self.export_state)
@@ -148,14 +149,15 @@ class GUI:
                     
                     # Training Control
                     with dpg.collapsing_header(label="Training Control", default_open=False):
-                        dpg.add_button(label="Start Training", callback=self.start_training)
-                        dpg.add_slider_float(
-                            label="Epsilon",
-                            default_value=0.1,
-                            min_value=0.0,
-                            max_value=1.0,
-                            tag="epsilon_slider"
-                        )
+                        # Train func: Temprarily disabled
+                        # dpg.add_button(label="Start Training", callback=self.start_training)
+                        # dpg.add_slider_float(
+                        #     label="Epsilon",
+                        #     default_value=0.1,
+                        #     min_value=0.0,
+                        #     max_value=1.0,
+                        #     tag="epsilon_slider"
+                        # )
                     
                         # Model Loading
                         dpg.add_separator()
@@ -243,6 +245,13 @@ class GUI:
         dpg.setup_dearpygui()
         dpg.set_primary_window("Main", True)
         dpg.show_viewport()
+
+    def toggle_ai(self, sender, app_data):
+        """
+        切换是否使用 AI
+        """
+        self.ai = app_data
+        self.log(f"AI {"enabled" if app_data else "disabled"}")
 
     def change_cell_size(self, sender, app_data):
         """
@@ -581,82 +590,82 @@ ENV_HEIGHT = {env_height}
         except Exception as e:
             self.log(f"Error loading model: {e}", "ERROR")
 
-    def start_training(self):
-        """开始训练模型"""
-        state_size = self.env.state_size
-        action_size = self.env.action_size
-        policy_net = self.agent.model
-        target_net = DQNetwork(state_size, action_size, self.configs["HIDDEN_SIZE"])
-        target_net.load_state_dict(policy_net.state_dict())
-        self.is_training = True
-        optimizer = optim.Adam(policy_net.parameters(), lr=self.configs["LEARNING_RATE"])
-        replay_buffer = ExperienceReplay(self.configs["BUFFER_SIZE"])
+    # def start_training(self):
+    #     """开始训练模型"""
+    #     state_size = self.env.state_size
+    #     action_size = self.env.action_size
+    #     policy_net = self.agent.model
+    #     target_net = DQNetwork(state_size, action_size, self.configs["HIDDEN_SIZE"])
+    #     target_net.load_state_dict(policy_net.state_dict())
+    #     self.is_training = True
+    #     optimizer = optim.Adam(policy_net.parameters(), lr=self.configs["LEARNING_RATE"])
+    #     replay_buffer = ExperienceReplay(self.configs["BUFFER_SIZE"])
     
-        epsilon = self.configs["EPSILON_START"]
-        episode_rewards = []
+    #     epsilon = self.configs["EPSILON_START"]
+    #     episode_rewards = []
 
-        for episode in range(self.configs["MAX_EPISODES"]):
-            state = self.env.reset(int(self.configs["INITIAL_CELL_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
-            total_reward = 0
-            steps = 0
+    #     for episode in range(self.configs["MAX_EPISODES"]):
+    #         state = self.env.reset(int(self.configs["INITIAL_CELL_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
+    #         total_reward = 0
+    #         steps = 0
 
-            while steps < self.configs["MAX_STEPS"]:
-                actions = self.agent.act(state, epsilon)
+    #         while steps < self.configs["MAX_STEPS"]:
+    #             actions = self.agent.act(state, epsilon)
 
-                next_state, reward, done, _ = self.env.step(actions, steps)
+    #             next_state, reward, done, _ = self.env.step(actions, steps)
 
-                if len(state) > 0:
-                    for i in range(len(state)):
-                        replay_buffer.push(
-                            state[i], actions[i], reward,
-                            next_state[i] if i < len(next_state) else np.zeros(state_size), done
-                        )
+    #             if len(state) > 0:
+    #                 for i in range(len(state)):
+    #                     replay_buffer.push(
+    #                         state[i], actions[i], reward,
+    #                         next_state[i] if i < len(next_state) else np.zeros(state_size), done
+    #                     )
                 
-                state = next_state
-                total_reward += reward
-                steps += 1
+    #             state = next_state
+    #             total_reward += reward
+    #             steps += 1
 
-                if len(replay_buffer) >= self.configs["BATCH_SIZE"]:
-                    self.train_model(policy_net, target_net, optimizer, replay_buffer)
+    #             if len(replay_buffer) >= self.configs["BATCH_SIZE"]:
+    #                 self.train_model(policy_net, target_net, optimizer, replay_buffer)
                 
-                if done:
-                    break
+    #             if done:
+    #                 break
             
-            if episode % self.configs["TARGET_UPDATE"] == 0:
-                target_net.load_state_dict(policy_net.state_dict())
+    #         if episode % self.configs["TARGET_UPDATE"] == 0:
+    #             target_net.load_state_dict(policy_net.state_dict())
             
-            epsilon = max(self.configs["EPSILON_END"], epsilon * self.configs["EPSILON_DECAY"])
+    #         epsilon = max(self.configs["EPSILON_END"], epsilon * self.configs["EPSILON_DECAY"])
 
-            episode_rewards.append(total_reward)
-            self.log(f"Episode {episode}, Reward: {total_reward:.3f}, Population: {self.env.get_population()}, Epsilon: {epsilon:.3f}")
+    #         episode_rewards.append(total_reward)
+    #         self.log(f"Episode {episode}, Reward: {total_reward:.3f}, Population: {self.env.get_population()}, Epsilon: {epsilon:.3f}")
             
-        torch.save(policy_net.state_dict(), "trained_model.pth")
-    
-    def train_model(self, policy_net, target_net, optimizer, replay_buffer):
-        """
-        训练 policy_network
+    #     torch.save(policy_net.state_dict(), "trained_model.pth")
+    # 
+    # def train_model(self, policy_net, target_net, optimizer, replay_buffer):
+    #     """
+    #     训练 policy_network
         
-        :param policy_net: 要训练的网络
-        :param replay_buffer: 经验回放缓冲区
-        """
-        state, actions, rewards, next_state, done = replay_buffer.sample(self.configs["BATCH_SIZE"])
+    #     :param policy_net: 要训练的网络
+    #     :param replay_buffer: 经验回放缓冲区
+    #     """
+    #     state, actions, rewards, next_state, done = replay_buffer.sample(self.configs["BATCH_SIZE"])
 
-        state = torch.FloatTensor(state)
-        actions = torch.LongTensor(actions)
-        rewards = torch.FloatTensor(rewards)
-        next_states = torch.FloatTensor(next_states)
-        done = torch.BoolTensor(done)
+    #     state = torch.FloatTensor(state)
+    #     actions = torch.LongTensor(actions)
+    #     rewards = torch.FloatTensor(rewards)
+    #     next_states = torch.FloatTensor(next_states)
+    #     done = torch.BoolTensor(done)
 
-        current_q = policy_net(state).gather(1, actions.unsqueeze(1))
+    #     current_q = policy_net(state).gather(1, actions.unsqueeze(1))
 
-        next_q = target_net(next_state).max(1)[0].detach()
-        target_q = rewards + (self.configs["GAMMA"] * next_q * (~done))
+    #     next_q = target_net(next_state).max(1)[0].detach()
+    #     target_q = rewards + (self.configs["GAMMA"] * next_q * (~done))
 
-        loss = F.mse_loss(current_q.squeeze(), target_q)
+    #     loss = F.mse_loss(current_q.squeeze(), target_q)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    #     optimizer.zero_grad()
+    #     loss.backward()
+    #     optimizer.step()
 
     def change_update_interval(self, sender, app_data):
         """
@@ -749,6 +758,7 @@ ENV_HEIGHT = {env_height}
                 self.draw_cells()
                 self.update_statistics()
                 self.log("Simulation reset")
+                self.is_running = False
             except Exception as e:
                 self.log(f"Error resetting simulation: {e}", "ERROR")
 
@@ -944,10 +954,12 @@ ENV_HEIGHT = {env_height}
             if self.is_running and self.env is not None:
                 try:
                     state = self.env._get_observation()
-                    if state.size > 0:
+                    if self.ai and state.size > 0:
                         epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
                         actions = self.agent.act(state, epsilon=epsilon)
                         self.log(f"Agent selected {len(actions)} actions with epsilon={epsilon:.2f}", "DEBUG")
+                    elif not self.ai:
+                        actions=None
                     else:
                         actions = None
                         self.log("No cells alive, no action takes", "DEBUG")
@@ -962,6 +974,7 @@ ENV_HEIGHT = {env_height}
                         self.log(f"Episode {self.stats['episode']} finished after {self.step_count} steps with total reward {self.stats['reward']:.2f}")
                     self.draw_cells()
                     self.update_statistics()
+                    time.sleep(self.update_interval)
                 except Exception as e:
                     self.log(f"Error while simulating: {e}", "ERROR")
                     self.is_running = False
