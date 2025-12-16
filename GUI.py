@@ -800,7 +800,7 @@ ENV_HEIGHT = {env_height}
         """
         启动游戏
         """
-        os.path.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.log("Game Starting")
         if not self.initialize_environment():
             self.log("Failed to initialize environment.")
