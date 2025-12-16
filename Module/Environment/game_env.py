@@ -17,8 +17,6 @@ class SmartGameEnv:
         
         # 从配置获取视野距离
         self.vision_d = self.configs["VISION"]
-        # self.vision_d = 5
-        #FIXME: 临时硬编码，等待core库更新
         self.state_size = (2 * self.vision_d + 1) ** 2
         self.action_size = 9  # 8个方向 + 不动
         
@@ -66,7 +64,7 @@ ENV_HEIGHT = 100
     def is_position_empty(self, x, y):
         return self.env.is_position_empty(x, y)
     
-    def step(self, actions=None):
+    def step(self, actions=None, step=0):
         """执行一步"""
         if actions is None:
             self.env.update()
@@ -74,7 +72,7 @@ ENV_HEIGHT = 100
             self.env.update_with_moves(actions)
         
         obs = self._get_observation()
-        reward = self._calculate_reward()
+        reward = self._calculate_reward(step)
         done = self._is_done()
         info = {
             'population': self.env.get_population(),
@@ -91,7 +89,7 @@ ENV_HEIGHT = 100
             print(f"Error getting cell states: {e}")
             return np.array([])
     
-    def _calculate_reward(self):
+    def _calculate_reward(self, step):
         """计算奖励"""
         population = self.env.get_population()
         density = self.env.get_density()
@@ -102,6 +100,8 @@ ENV_HEIGHT = 100
         # 密度惩罚：避免过度拥挤或过于稀疏
         if density > 0.7 or density < 0.1:
             reward -= 0.1
+
+        reward += int(step * 0.002)
             
         return reward
     
