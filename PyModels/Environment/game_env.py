@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 import smart_life_core
-from .. import config
+from ..Configs.config import Config
 
 class SmartGameEnv:
     def __init__(self, width=50, height=50, config_file=".\\config.txt"):
@@ -13,7 +13,7 @@ class SmartGameEnv:
         self.env = smart_life_core.GameEnvironment(width, height, config_file)
         self.width = width
         self.height = height
-        self.configs = config.Config()
+        self.configs = Config()
         
         # 从配置获取视野距离
         self.vision_d = self.configs["VISION"]

@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from environment.game_env import SmartGameEnv
-from models.policy_network import DQNetwork
-from agents.cell_agent import CellAgent
-from config import Config
+from PyModels.Environment.game_env import SmartGameEnv
+from PyModels.Models.policy_network import DQNetwork
+from PyModels.Agent.cell_agent import CellAgent
+from PyModels.Configs.config import Config
 
 def evaluate(model_path, num_episodes=10):
     # 初始化环境
