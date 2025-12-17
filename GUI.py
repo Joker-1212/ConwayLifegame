@@ -40,6 +40,7 @@ class GUI:
         self.ai = True
 
         self.configs = Config()
+        self.configs.load_from_file()
         self.last_update_time = time.time()
         self.frame_count = 0
         self.stats = {
@@ -60,7 +61,6 @@ class GUI:
         try:
         # 初始化游戏环境
             self.log("Initializing environment...")
-            self.configs.load_from_file()
             self.env = SmartGameEnv(
                 width=self.configs["ENV_WIDTH"],
                 height=self.configs["ENV_HEIGHT"],
@@ -162,6 +162,7 @@ class GUI:
                         # Model Loading
                         dpg.add_separator()
                         dpg.add_text("Model Loading")
+                        dpg.add_input_text(label="Path", default_value=".\\trained_model.pth", tag="model_path_input")
                         dpg.add_button(label="Load Model", callback=self.load_model)
 
                     # Rule Setting
