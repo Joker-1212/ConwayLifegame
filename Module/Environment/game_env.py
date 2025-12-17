@@ -102,7 +102,16 @@ ENV_HEIGHT = 100
             reward -= 0.1
 
         reward += step * 0.002
-            
+
+        if self._is_done():
+            if step <= 200:
+                reward -= 0.01
+            if step <= 500:
+                reward -= 0.01
+        
+        if step == 1000:
+            reward += population / (self.width * self.height) * 2
+
         return reward
     
     def _is_done(self):
