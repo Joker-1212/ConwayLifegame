@@ -101,8 +101,17 @@ ENV_HEIGHT = 100
         if density > 0.7 or density < 0.1:
             reward -= 0.1
 
-        reward += int(step * 0.002)
-            
+        reward += step * 0.002
+
+        if self._is_done():
+            if step <= 200:
+                reward -= 0.01
+            if step <= 500:
+                reward -= 0.01
+        
+        if step == 1000:
+            reward += population / (self.width * self.height) * 2
+
         return reward
     
     def _is_done(self):
