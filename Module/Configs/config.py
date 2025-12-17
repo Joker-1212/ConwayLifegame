@@ -26,8 +26,8 @@ class Config:
         self.configs["MAX_EPISODES"] = 1000
         self.configs["MAX_STEPS"] = 1000
         self.configs["EPSILON_START"] = 1.0
-        self.configs["EPSILON_END"] = 0.01
-        self.configs["EPSILON_DECAY"] = 0.995
+        self.configs["EPSILON_END"] = 0.002
+        self.configs["EPSILON_DECAY"] = 0.85
 
         self.load_from_file()
 

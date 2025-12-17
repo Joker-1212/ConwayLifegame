@@ -101,7 +101,7 @@ ENV_HEIGHT = 100
         if density > 0.7 or density < 0.1:
             reward -= 0.1
 
-        reward += int(step * 0.002)
+        reward += step * 0.002
             
         return reward
     
