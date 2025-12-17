@@ -360,9 +360,11 @@ class GUI:
                 self.log("Training process completed successfully")
                 dpg.set_value("training_status", "Status: Training completed")
                 dpg.set_value("Trainging progress", 0.0)
+                self.load_model()
             else:
                 self.log("Training process failed", "ERROR")
                 dpg.set_value("training_status", "Status: Training failed")
+                dpg.set_value("Training progress", 0.0)
         
         except Exception as e:
             self.log(f"Error running training: {e}", "ERROR")
