@@ -99,7 +99,7 @@ def train():
         
         episode_rewards.append(total_reward)
         print(f"Episode {episode}, Reward: {total_reward:.3f}, "
-              f"Population: {env.get_population()}, Epsilon: {epsilon:.3f}")
+              f"Population: {env.get_population()}, Epsilon: {epsilon:.3f}, Steps: {steps}")
     
     # 保存模型
     torch.save(policy_net.state_dict(), "trained_model.pth")
