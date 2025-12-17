@@ -11,6 +11,8 @@ class PolicyNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             nn.Linear(hidden_dim, output_dim),
         )
         # self.fc1 = nn.Linear(input_dim, hidden_dim)
@@ -31,6 +33,8 @@ class DQNetwork(nn.Module):
         # 定义一个简单的前馈神经网络
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
