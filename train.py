@@ -7,6 +7,7 @@ from Module.Models.policy_network import DQNetwork
 from Module.Agent.cell_agent import CellAgent
 from Module.Utils.experience_replay import ExperienceReplay
 from Module.Configs.config import Config
+from torch.optim.lr_scheduler import CosineAnnealingLR
 import os
 
 def train():
@@ -36,6 +37,7 @@ def train():
     
     agent = CellAgent(policy_net, state_size, action_size)
     optimizer = optim.Adam(policy_net.parameters(), lr=configs["LEARNING_RATE"])
+    scheduler = CosineAnnealingLR(optimizer, T_max=configs["MAX_EPISODES"])
     replay_buffer = ExperienceReplay(configs["BUFFER_SIZE"])
     
     epsilon = configs["EPSILON_START"]
@@ -98,6 +100,7 @@ def train():
         epsilon = max(configs["EPSILON_END"], epsilon * configs["EPSILON_DECAY"])
         
         episode_rewards.append(total_reward)
+        scheduler.step()
         print(f"Episode {episode}, Reward: {total_reward:.3f}, "
               f"Population: {env.get_population()}, Epsilon: {epsilon:.3f}, Steps: {steps}")
     

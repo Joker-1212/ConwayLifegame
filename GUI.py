@@ -101,6 +101,7 @@ class GUI:
                         dpg.add_button(label="Pause", callback=self.pause_simulation)
                         dpg.add_button(label="Reset", callback=self.reset_simulation)
                         dpg.add_button(label="Step", callback=self.step_simulation)
+                    dpg.add_button(label="Randomly Initialize", callback=self.random_initialize)
                     dpg.add_separator()
 
                     # Debug controls
@@ -349,8 +350,7 @@ class GUI:
                     try:
                         parts = line.strip().split()
                         episode_num = int(parts[1][:-1])
-                        total_episodes = self.configs["MAX_EPISODES"]
-                        progress = episode_num / total_episodes
+                        progress = episode_num / self.configs["MAX_EPISODES"]
                         dpg.set_value("training_progress", progress)
                     except Exception as e:
                         self.log(f"Error parsing training progress: {e}", "ERROR")
@@ -360,18 +360,19 @@ class GUI:
             if process.returncode == 0:
                 self.log("Training process completed successfully")
                 dpg.set_value("training_status", "Status: Training completed")
-                dpg.set_value("Trainging progress", 0.0)
+                dpg.set_value("trainging_progress", 0.0)
                 self.load_model()
             else:
                 self.log("Training process failed", "ERROR")
                 dpg.set_value("training_status", "Status: Training failed")
-                dpg.set_value("Training progress", 0.0)
+                dpg.set_value("training_progress", 0.0)
         
         except Exception as e:
             self.log(f"Error running training: {e}", "ERROR")
         
         finally:
             self.training_auto = False
+            dpg.set_value("Training progress", 0.0)
 
     def grid_click_callback(self, sender):
         """
@@ -391,15 +392,15 @@ class GUI:
             mouse_pos = dpg.get_mouse_pos()
             if not dpg.does_alias_exist("grid_background"):
                 self.log("Grid draw area not found", "ERROR")
-            item_pos = dpg.get_item_pos("grid_background")
+            item_pos = dpg.get_item_pos("grid_drawlist")
             item_size = dpg.get_item_rect_size("grid_drawlist")
 
             # 计算网格坐标
-            if (mouse_pos[0] < item_pos[0] or mouse_pos[1] < item_pos[1] or
-                mouse_pos[0] > item_pos[0] + item_size[0] + 65 or
-                mouse_pos[1] > item_pos[1] + item_size[1] + 10):
+            # if (mouse_pos[0] < item_pos[0] or mouse_pos[1] < item_pos[1] or
+                # mouse_pos[0] > item_pos[0] + item_size[0] + 65 or
+                # mouse_pos[1] > item_pos[1] + item_size[1] + 30):
                 # 此时点击区域位于图像外
-                return
+                # return
             
             rx = int((mouse_pos[0] - item_pos[0] - 10) / self.cell_size)
             ry = int((mouse_pos[1] - item_pos[1] - 65) / self.cell_size)
@@ -502,6 +503,12 @@ class GUI:
             self.log("Rules reloaded from config.txt")
         except Exception as e:
             self.log(f"Error reloading rules: {e}", "ERROR")
+
+    def random_initialize(self):
+        self.env.reset(int(self.configs["INITIAL_CELLS_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
+        self.draw_cells()
+        self.update_statistics()
+        self.log("Randomly initialized the environment.")
 
     def save_rules(self):
         if self.is_running:
@@ -804,7 +811,7 @@ ENV_HEIGHT = {env_height}
         """清除网格中的所有细胞"""
         if self.env is not None:
             try:
-                self.env.reset(0)
+                self.initialize_environment()
                 self.step_count = 0
                 self.draw_cells()
                 self.update_statistics()
@@ -921,6 +928,7 @@ ENV_HEIGHT = {env_height}
                 parent="grid_drawlist",
                 tag=f"C{cell['id']}"
             )
+            self.log(f"{cell['x']}, {cell['y']}")
             self.cell_id_existed_on_grid.add(f"C{cell['id']}")
 
     def log(self, message, level="INFO"):

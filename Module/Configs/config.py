@@ -18,7 +18,7 @@ class Config:
         self.configs["BATCH_SIZE"] = 32
         self.configs["BUFFER_SIZE"] = 10000
         self.configs["TARGET_UPDATE"] = 100
-        self.configs["INITIAL_CELLS_POTION"] = 0.5 
+        self.configs["INITIAL_CELLS_POTION"] = 0.5
         # 模型参数
         self.configs["HIDDEN_SIZE"] = 256
         
@@ -26,7 +26,7 @@ class Config:
         self.configs["MAX_EPISODES"] = 1000
         self.configs["MAX_STEPS"] = 1000
         self.configs["EPSILON_START"] = 1.0
-        self.configs["EPSILON_END"] = 0.002
+        self.configs["EPSILON_END"] = 0
         self.configs["EPSILON_DECAY"] = 0.85
 
         self.load_from_file()

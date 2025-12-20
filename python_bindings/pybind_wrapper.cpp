@@ -203,6 +203,11 @@ public:
     {
         return env_->isPositionEmpty(Position(x, y));
     }
+
+    float new_density()
+    {
+        return env_->newDensity();
+    }
 };
 
 PYBIND11_MODULE(smart_life_core, m)
@@ -267,5 +272,6 @@ PYBIND11_MODULE(smart_life_core, m)
              "Remove a cell at the specified position")
         .def("set_cell", &PyGameEnvironment::set_cell,
              py::arg("x"), py::arg("y"),
-             "Set a cell at the specified position");
+             "Set a cell at the specified position")
+        .def("new_density", &PyGameEnvironment::new_density, "Return a more accurate cell density");
 }
