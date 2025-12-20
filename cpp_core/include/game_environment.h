@@ -122,6 +122,12 @@ public:
      */
     float getDensity() const;
 
+    /**
+     * @brief 更精确的密度计算
+     * @return 细胞密度值
+     */
+    float newDensity() const;
+
     // 配置管理方法 - 在 Python 绑定中使用
 
     /**

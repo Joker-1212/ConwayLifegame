@@ -2,6 +2,8 @@
 #include "../include/cell.h"
 #include <iostream>
 #include <random>
+#include <queue>
+#include <utility>
 /**
  * @file game_environment.cpp
  * @brief 游戏环境实现文件
@@ -432,6 +434,101 @@ float GameEnvironment::getDensity() const
     return density;
 }
 
+float GameEnvironment::newDensity() const
+{
+    int width = width_;
+    int height = height_;
+
+    // 如果没有活细胞，直接返回0
+    if (getPopulation() == 0)
+    {
+        return 0.0f;
+    }
+
+    // 创建访问标记矩阵，记录哪些细胞已被分组
+    std::vector<std::vector<bool>> visited(height, std::vector<bool>(width, false));
+    // 方向数组，定义8个邻居方向（包括对角线）
+    int dx[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int dy[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+
+    std::vector<float> groupDensities; // 存储每个细胞组的密度值
+
+    // 遍历整个网格
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            // 如果当前细胞是活的且未被访问过，则开始一个新的组
+            if (grid_[y][x] && !visited[y][x])
+            {
+                std::queue<std::pair<int, int>> q; // BFS队列
+                q.push({x, y});
+                visited[y][x] = true;
+
+                // 初始化当前组的边界框
+                int min_x = x, max_x = x, min_y = y, max_y = y;
+                int cellCount = 0; // 当前组内的活细胞数量
+
+                // BFS遍历当前组
+                while (!q.empty())
+                {
+                    auto cell = q.front();
+                    q.pop();
+                    int cx = cell.first;
+                    int cy = cell.second;
+                    cellCount++;
+
+                    // 更新边界框坐标
+                    if (cx < min_x)
+                        min_x = cx;
+                    if (cx > max_x)
+                        max_x = cx;
+                    if (cy < min_y)
+                        min_y = cy;
+                    if (cy > max_y)
+                        max_y = cy;
+
+                    // 检查8个方向的邻居
+                    for (int i = 0; i < 8; ++i)
+                    {
+                        int nx = cx + dx[i];
+                        int ny = cy + dy[i];
+                        // 确保邻居在网格范围内
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                        {
+                            if (grid_[ny][nx] && !visited[ny][nx])
+                            {
+                                visited[ny][nx] = true;
+                                q.push({nx, ny});
+                            }
+                        }
+                    }
+                }
+
+                // 计算当前组的边界框面积
+                int area = (max_x - min_x + 1) * (max_y - min_y + 1);
+                if (area > 0)
+                {
+                    float density = static_cast<float>(cellCount) / area;
+                    groupDensities.push_back(density);
+                }
+            }
+        }
+    }
+
+    // 计算所有组密度的平均值
+    if (groupDensities.empty())
+    {
+        return 0.0f;
+    }
+
+    float sum = 0.0f;
+    for (float d : groupDensities)
+    {
+        sum += d;
+    }
+    return sum / groupDensities.size();
+}
 void GameEnvironment::reloadConfig()
 {
     // TODO:重新加载配置
