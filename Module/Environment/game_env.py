@@ -59,7 +59,7 @@ ENV_HEIGHT = 100
     def reset(self, num_cells=100):
         """重置环境"""
         self.env.initialize_random(num_cells)
-        return self._get_observation()
+        return self.get_observation()
     
     def is_position_empty(self, x, y):
         return self.env.is_position_empty(x, y)
@@ -71,7 +71,7 @@ ENV_HEIGHT = 100
         else:
             self.env.update_with_moves(actions)
         
-        obs = self._get_observation()
+        obs = self.get_observation()
         reward = self._calculate_reward(step)
         done = self._is_done()
         info = {
@@ -81,7 +81,7 @@ ENV_HEIGHT = 100
         
         return obs, reward, done, info
     
-    def _get_observation(self):
+    def get_observation(self):
         """获取观察状态"""
         try:
             return self.env.get_cell_states()

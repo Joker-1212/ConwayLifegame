@@ -68,7 +68,7 @@ def train():
             if len(state) > 0:
                 for i in range(len(state)):
                     replay_buffer.push(
-                        state[i], actions[i], reward,  # type: ignore
+                        state[i], actions[i], reward,
                         next_state[i] if i < len(next_state) else np.zeros(state_size),
                         done
                     )
