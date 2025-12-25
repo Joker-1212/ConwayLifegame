@@ -57,23 +57,27 @@ ENV_HEIGHT = 100
         print(f"Created default config file: {config_file}")
     
     def reset(self, num_cells=100):
-        """重置环境"""
+        """
+        重置环境
+        """
         self.env.initialize_random(num_cells)
-        return self._get_observation()
+        return self.get_observation()
     
     def is_position_empty(self, x, y):
         return self.env.is_position_empty(x, y)
     
     def step(self, actions=None, step=0):
-        """执行一步"""
+        """
+        执行一步
+        """
         if actions is None:
             self.env.update()
         else:
             self.env.update_with_moves(actions)
         
-        obs = self._get_observation()
-        reward = self._calculate_reward(step)
-        done = self._is_done()
+        obs = self.get_observation()
+        reward = self.__calculate_reward(step)
+        done = self.__is_done()
         info = {
             'population': self.env.get_population(),
             'density': self.env.get_density()
@@ -81,16 +85,20 @@ ENV_HEIGHT = 100
         
         return obs, reward, done, info
     
-    def _get_observation(self):
-        """获取观察状态"""
+    def get_observation(self):
+        """
+        获取每一个细胞周围的邻居状态
+        """
         try:
             return self.env.get_cell_states()
         except Exception as e:
             print(f"Error getting cell states: {e}")
             return np.array([])
     
-    def _calculate_reward(self, step):
-        """计算奖励"""
+    def __calculate_reward(self, step):
+        """
+        计算奖励
+        """
         population = self.env.get_population()
         density = self.env.new_density()
         
@@ -105,6 +113,7 @@ ENV_HEIGHT = 100
         if density <= (self.configs["BREED_MIN"] - 1.0) / 8 or density >= (self.configs["BREED_MAX"] + 1.0) / 8:
             reward -= 0.1
 
+        # 额外奖励：种群存活时间
         reward += step * 0.002
 
         if step == 500:
@@ -112,8 +121,10 @@ ENV_HEIGHT = 100
 
         return reward
     
-    def _is_done(self):
-        """检查是否结束"""
+    def __is_done(self):
+        """
+        检查是否结束（即细胞是否全部死亡）
+        """
         population = self.env.get_population()
         return population == 0 or population >= self.width * self.height * 0.8
     
@@ -130,7 +141,9 @@ ENV_HEIGHT = 100
         return self.env.get_density()
     
     def get_grid_state(self):
-        """获取网格状态（用于可视化）"""
+        """
+        获取网格状态（用于可视化）
+        """
         try:
             return self.env.get_grid_state()
         except Exception as e:
@@ -138,7 +151,9 @@ ENV_HEIGHT = 100
             return np.array([])
     
     def get_cells(self):
-        """获取所有活细胞的具体信息"""
+        """
+        获取所有活细胞的具体信息
+        """
         try:
             return self.env.get_cells()
         except Exception as e:
@@ -146,11 +161,15 @@ ENV_HEIGHT = 100
             return []
     
     def reload_config(self):
-        """重新加载配置"""
+        """
+        重新加载配置
+        """
         self.env.reload_config()
         self.vision_d = self.config_parser.get_int("Vision", 5)
         self.state_size = (2 * self.vision_d + 1) ** 2
     
     def print_config(self):
-        """打印当前配置"""
+        """
+        打印当前配置
+        """
         self.env.print_config()

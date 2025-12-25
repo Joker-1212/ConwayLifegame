@@ -1,44 +1,40 @@
-import dearpygui.dearpygui as dpg
 from Module.Agent.cell_agent import CellAgent
 from Module.Models.policy_network import DQNetwork
 from Module.Environment.game_env import SmartGameEnv
 from Module.Utils.experience_replay import ExperienceReplay
-import torch.optim as optim
+from Module.Configs.config import Config
+import dearpygui.dearpygui as dpg
 import torch.nn.functional as F
-import numpy as np
 import datetime
-import train
-import queue
-import threading
 import os
+import queue
 import sys
 import subprocess
+import threading
 import time
-import json
 import torch
-from Module.Configs.config import Config
 
 class GUI:
     def __init__(self):
-        self.env = None
-        self.agent = None
+        self.env = None # 游戏运行环境
+        self.agent = None # 细胞 Agent
+
+        # 环境状态
         self.is_running = False
-        self.is_training = False
-        self.size = 8
-        self.update_interval = 1
-        self.debug = False
-        self.step_count = 0
         self.edit_mode = True
         self.show_grid_line = False
-        self.cell_size = 8
         self.training_auto = False
+        self.gui_ready = False
+        self.cell_size = 8 # 细胞大小
+        self.update_interval = 0.5 # 更新间隔秒数
+        self.ai = True # 是否使用 AI
+
+        self.step_count = 0
 
         self.log_queue = queue.Queue()
-        self.gui_ready = False
-        self.debug_mode = True
         self.cell_id_existed_on_grid = set()
-        self.ai = True
 
+        # 配置解析器以及统计数据
         self.configs = Config()
         self.configs.load_from_file()
         self.last_update_time = time.time()
@@ -53,10 +49,30 @@ class GUI:
             'total_steps': 0,
             'training_loss': 0.0
         }
+        state = (self.configs["VISION"] * 2 + 1) ** 2
+        action = 9
 
+        # 细胞 Agent
+        model = DQNetwork(state, action, self.configs["HIDDEN_SIZE"])
+        self.agent = CellAgent(model, state, action)
+        self.log("Cell Agents initiallized")
+
+    def log(self, message, level="INFO"):
+        """
+        记录日志信息到日志队列中。
+        
+        Args:
+            message: 日志信息
+            level: 日志等级: INFO/ERROR/DEBUG
+        """
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        formatted_message = f"[{timestamp}] [{level}] {message}"
+        self.log_queue.put(formatted_message)
+
+    # Initializers
     def initialize_environment(self):
         """
-        初始化游戏环境和细胞 Agent
+        初始化游戏环境
         """
         try:
         # 初始化游戏环境
@@ -68,13 +84,6 @@ class GUI:
             )
             self.env.reset(0)
             self.log(f"Environment initiallized with width: {self.configs['ENV_WIDTH']}, height: {self.configs['ENV_HEIGHT']}")
-
-            # 初始化细胞 Agent
-            state = self.env.state_size
-            action = self.env.action_size
-            model = DQNetwork(state, action, self.configs["HIDDEN_SIZE"])
-            self.agent = CellAgent(model, state, action)
-            self.log("Cell Agents initiallized")
             return True
         except Exception as e:
             self.log(f"Error initializing environment: {e}", level="ERROR")
@@ -104,13 +113,8 @@ class GUI:
                     dpg.add_button(label="Randomly Initialize", callback=self.random_initialize)
                     dpg.add_separator()
 
-                    # Debug controls
+                    # GUI 状态切换栏
                     with dpg.collapsing_header(label="Debug Controls", default_open=True):
-                        dpg.add_checkbox(
-                            label="Debug Mode",
-                            default_value=self.debug_mode,
-                            callback=lambda s, d: setattr(self, "debug_mode", d)
-                        )
                         dpg.add_checkbox(
                             label="Edit Mode",
                             default_value=self.edit_mode,
@@ -126,18 +130,17 @@ class GUI:
                             default_value=self.ai,
                             callback=self.toggle_ai
                         )
-                        dpg.add_button(label="Export State", callback=self.export_state)
                         dpg.add_button(label="Force GC", callback=self.force_garbage_collection)
                         dpg.add_button(label="Clear Log", callback=self.clear_log)
                         dpg.add_button(label="Clear Grid", callback=self.clear_grid)
                     
-                    # Simulation Control
+                    # 模拟程序控制
                     with dpg.collapsing_header(label="Simulation Control", default_open=True):
                         dpg.add_slider_float(
                             label="Update Interval",
                             default_value=self.update_interval,
                             min_value=0.01,
-                            max_value=10.0,
+                            max_value=5.0,
                             callback=self.change_update_interval
                         )
                         dpg.add_slider_int(
@@ -148,25 +151,7 @@ class GUI:
                             callback=self.change_cell_size
                         )
                     
-                    # Training Control
-                    with dpg.collapsing_header(label="Training Control", default_open=False):
-                        # Train func: Temprarily disabled
-                        # dpg.add_button(label="Start Training", callback=self.start_training)
-                        # dpg.add_slider_float(
-                        #     label="Epsilon",
-                        #     default_value=0.1,
-                        #     min_value=0.0,
-                        #     max_value=1.0,
-                        #     tag="epsilon_slider"
-                        # )
-                    
-                        # Model Loading
-                        dpg.add_separator()
-                        dpg.add_text("Model Loading")
-                        dpg.add_input_text(label="Path", default_value=".\\trained_model.pth", tag="model_path_input")
-                        dpg.add_button(label="Load Model", callback=self.load_model)
-
-                    # Rule Setting
+                    # 游戏规则更改
                     with dpg.collapsing_header(label="Rule Setting", default_open=False):
                         dpg.add_text("Game Rules")
                         dpg.add_input_int(label="Survive Min", default_value=self.configs["LIVE_MIN"], tag="rule_live_min")
@@ -182,14 +167,18 @@ class GUI:
                         dpg.add_button(label="Reload Rules", callback=self.reload_rules)
                         dpg.add_button(label="Save Rules", callback=self.save_rules)
                     
-                    # Training Function
-                    with dpg.collapsing_header(label="Auto Training"):
+                    # 自动训练和模型导入
+                    with dpg.collapsing_header(label="Training and Model Loading"):
                         dpg.add_text("One-Click Training")
                         dpg.add_button(label="Start Auto Training", callback=self.auto_training)
                         dpg.add_progress_bar(label="Training Progress", default_value=0.0, tag="training_progress")
                         dpg.add_text("Status: Ready", tag="training_status")
+                        dpg.add_separator()
+                        dpg.add_text("Model Loading")
+                        dpg.add_input_text(label="Path", default_value=".\\Default_model.pth", tag="model_path_input")
+                        dpg.add_button(label="Load Model", callback=self.load_model)
 
-                    # Statistics Display
+                    # 统计数据展示
                     with dpg.collapsing_header(label="Statistics", default_open=True):
                         dpg.add_text("Population: 0", tag="stat_population")
                         dpg.add_text("Density: 0.000", tag="stat_density")
@@ -200,17 +189,16 @@ class GUI:
                         dpg.add_text("Avg Reward: 0.000", tag="stat_avg_reward")
                         dpg.add_text("Training Loss: 0.000", tag="stat_loss")
                     
-                    # Configuration
+                    # Grid 环境配置
                     with dpg.collapsing_header(label="Configuration"):
-                        dpg.add_input_int(label="Grid Width", default_value=self.configs["ENV_WIDTH"], tag="config_width")
-                        dpg.add_input_int(label="Grid Height", default_value=self.configs["ENV_HEIGHT"], tag="config_height")
-                        dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_POTION"], tag="config_density")
+                        dpg.add_input_int(label="Grid Size", default_value=self.configs["ENV_WIDTH"], tag="config_size")
+                        dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_PORTION"], tag="config_density")
                         dpg.add_button(label="Apply Config", callback=self.apply_config)
                 
                 # 游戏网格
                 with dpg.child_window():
-                    # Grid Displayer
                     with dpg.tab_bar():
+                        # Grid 展示
                         with dpg.tab(label="Grid"):
                             dpg.add_text("Game Grid - Click to toggle cells(Edit mode should be enabled)")
                             dpg.add_separator()
@@ -248,6 +236,100 @@ class GUI:
         dpg.set_primary_window("Main", True)
         dpg.show_viewport()
 
+    # Grid Drawers
+    def draw_grid(self):
+        """
+        绘制整个界面
+        """
+        if not dpg.does_alias_exist("grid_drawlist"):
+            return
+        
+        # 清空背景
+        dpg.delete_item("grid_drawlist", children_only=True)
+
+        # 画背景
+        dpg.draw_rectangle(
+            (0, 0),
+            (self.configs["ENV_WIDTH"] * self.cell_size, self.configs["ENV_HEIGHT"] * self.cell_size),
+            color=(0, 0, 0, 255),
+            fill=(0, 0, 0, 255),
+            parent="grid_drawlist",
+            tag="grid_background"
+        )
+
+        # 画细胞
+        self.draw_cells()
+
+        # 画网格线
+        self.draw_grid_line()
+
+    def draw_grid_line(self):
+        """
+        生成网格线
+        """
+        if not dpg.does_alias_exist("grid_drawlist"):
+            return
+        
+        if self.show_grid_line:
+            grid_color = (255, 255, 255, 50)
+
+            # Verticals 垂直线
+            for x in range(self.configs["ENV_WIDTH"] + 1):
+                x_pos = x * self.cell_size
+                dpg.draw_line(
+                    (x_pos, 0),
+                    (x_pos, self.configs['ENV_HEIGHT'] * self.cell_size),
+                    color=grid_color,
+                    thickness=1,
+                    parent="grid_drawlist"
+                )
+            
+            # Horizentals 水平线
+            for y in range(self.configs['ENV_HEIGHT'] + 1):
+                y_pos = y * self.cell_size
+                dpg.draw_line(
+                    (0, y_pos),
+                    (self.configs['ENV_WIDTH'] * self.cell_size, y_pos),
+                    color=grid_color,
+                    thickness=1,
+                    parent='grid_drawlist'
+                )
+
+    def draw_cells(self):
+        """
+        绘制细胞
+        """
+        if not dpg.does_alias_exist("grid_drawlist"):
+            return
+        
+        # 先清空细胞
+        for cell_id in self.cell_id_existed_on_grid:
+            if dpg.does_alias_exist(cell_id):
+                dpg.delete_item(cell_id)
+        
+        self.cell_id_existed_on_grid.clear()
+
+        # 画细胞
+        for cell in self.env.get_cells():
+            dpg.draw_rectangle(
+                [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
+                [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
+                color=(0, 0, 255, 255),
+                fill=(0, 0, 255, 255),
+                parent="grid_drawlist",
+                tag=f"C{cell['id']}"
+            )
+            self.cell_id_existed_on_grid.add(f"C{cell['id']}")
+
+    # State Toggler
+    def toggle_grid_line(self, sender, app_data):
+        """
+        Toggle Grid Line Checkbox 的回调函数
+        """
+        self.show_grid_line = app_data
+        self.draw_grid()
+        self.log(f"Grid lines {'showed' if app_data else 'hidden'}")
+
     def toggle_ai(self, sender, app_data):
         """
         切换是否使用 AI
@@ -268,43 +350,18 @@ class GUI:
         self.draw_grid()
         self.log(f"Cell size changed to {app_data}")
 
-    def apply_config(self):
+    def change_update_interval(self, sender, app_data):
         """
-        应用新的环境配置
+        Update Interval 滑动条的回调函数
         """
-        if self.is_running:
-            self.log("Cannot apply config while simulating, please pause the simulation first", "WARNING")
-            return
+        self.update_interval = app_data
+        self.log(f"Update interval changed to {app_data:.2f} seconds")
 
-
-        try:
-            new_width = dpg.get_value("config_width")
-            new_height = dpg.get_value("config_height")
-            new_density = dpg.get_value("config_density")
-
-            if new_width <= 0 or new_height <= 0:
-                self.log("Invalid grid dimensions", "ERROR")
-                return
-
-            self.configs["ENV_WIDTH"] = new_width
-            self.configs["ENV_HEIGHT"] = new_height
-            self.configs["INITIAL_CELLS_POTION"] = new_density
-
-            # 重新初始化环境
-            self.initialize_environment()
-
-            # 更新GUI显示
-            dpg.configure_item("grid_drawlist",
-                               width=new_width * self.cell_size,
-                               height=new_height * self.cell_size)
-            self.draw_grid()
-            self.update_statistics()
-            self.log(f"Configuration applied: {new_width}x{new_height}, density={new_density:.2f}")
-        except Exception as e:
-            self.log(f"Error applying config: {e}", "ERROR")
-
+    # AI Function related
     def auto_training(self):
-        """自动训练"""
+        """
+        自动训练
+        """
         if self.training_auto:
             self.log("Auto training is already running", "WARNING")
             return
@@ -325,13 +382,15 @@ class GUI:
             dpg.set_value("training_status", "Status: Ready")
 
     def run_training(self):
-        """运行训练脚本"""
+        """
+        运行训练脚本
+        """
         try:
             self.log("Starting trainging process...")
 
+            # 使用 subprocess 启动训练脚本
             env_var = os.environ.copy()
             env_var['PYTHONUNBUFFERED'] = '1'
-            # 使用 subprocess 启动训练脚本
             process = subprocess.Popen(
                 [sys.executable, "train.py"],
                 stdout=subprocess.PIPE,
@@ -374,50 +433,64 @@ class GUI:
             self.training_auto = False
             dpg.set_value("Training progress", 0.0)
 
-    def grid_click_callback(self, sender):
+    def load_model(self):
         """
-        网格点击事件的 Handler
+        加载已训练模型
         """
-
-        if not self.edit_mode:
-            self.log("Edit mode is disabled. Enable edit mode to toggle cell state.")
-            return
-        
-        if self.is_running:
-            self.log("Edit is prohibited while simulating. Please pause the simulation first", "WARNING")
-            return
-        
         try:
-            # 获取鼠标位置
-            mouse_pos = dpg.get_mouse_pos()
-            if not dpg.does_alias_exist("grid_background"):
-                self.log("Grid draw area not found", "ERROR")
-            item_pos = dpg.get_item_pos("grid_drawlist")
-            item_size = dpg.get_item_rect_size("grid_drawlist")
+            model_path = dpg.get_value("model_path_input")
 
-            # 计算网格坐标
-            # if (mouse_pos[0] < item_pos[0] or mouse_pos[1] < item_pos[1] or
-                # mouse_pos[0] > item_pos[0] + item_size[0] + 65 or
-                # mouse_pos[1] > item_pos[1] + item_size[1] + 30):
-                # 此时点击区域位于图像外
-                # return
+            if not os.path.isfile(model_path):
+                self.log(f"Model file not found: {model_path}", "ERROR")
+                return
             
-            rx = int((mouse_pos[0] - item_pos[0] - 10) / self.cell_size)
-            ry = int((mouse_pos[1] - item_pos[1] - 65) / self.cell_size)
-            #NOTICE: 这里的 -10 和 -65 是经验值，具体问题尚未查明
-            if self.env.is_position_empty(rx, ry):
-                self.env.set_cell(rx, ry)
-                self.log(f"Cell added at ({rx}, {ry})")
-            else:
-                self.env.remove_cell(rx, ry)
-                self.log(f"Cell removed at ({rx}, {ry})")
-            self.draw_cells()
-            self.update_statistics()
+            state_dict = torch.load(model_path)
+            self.agent.model.load_state_dict(state_dict)
+
+            self.log(f"Model loaded from {model_path}")
         except Exception as e:
-            self.log(f"Err handling grid click: {e}", "ERROR")
+            self.log(f"Error loading model: {e}", "ERROR")
+
+    # Rules and configs Settings
+    def apply_config(self):
+        """
+        应用新的环境配置
+        """
+        if self.is_running:
+            self.log("Cannot apply config while simulating, please pause the simulation first", "WARNING")
+            return
+
+
+        try:
+            new_width = dpg.get_value("config_size")
+            new_height = dpg.get_value("config_size")
+            new_density = dpg.get_value("config_density")
+
+            if new_width <= 0 or new_height <= 0:
+                self.log("Invalid grid dimensions", "ERROR")
+                return
+
+            self.configs["ENV_WIDTH"] = new_width
+            self.configs["ENV_HEIGHT"] = new_height
+            self.configs["INITIAL_CELLS_PORTION"] = new_density
+
+            # 重新初始化环境
+            self.initialize_environment()
+
+            # 更新GUI显示
+            dpg.configure_item("grid_drawlist",
+                               width=new_width * self.cell_size,
+                               height=new_height * self.cell_size)
+            self.draw_grid()
+            self.update_statistics()
+            self.log(f"Configuration applied: {new_width}x{new_height}, density={new_density:.2f}")
+        except Exception as e:
+            self.log(f"Error applying config: {e}", "ERROR")
 
     def apply_rules(self):
-        """应用新的游戏规则"""
+        """
+        应用新的游戏规则
+        """
         if self.is_running:
             self.log("Cannot apply rules while simulating, please pause the simulation first", "WARNING")
             return
@@ -504,13 +577,10 @@ class GUI:
         except Exception as e:
             self.log(f"Error reloading rules: {e}", "ERROR")
 
-    def random_initialize(self):
-        self.env.reset(int(self.configs["INITIAL_CELLS_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
-        self.draw_cells()
-        self.update_statistics()
-        self.log("Randomly initialized the environment.")
-
     def save_rules(self):
+        """
+        保存当前游戏规则至文件
+        """
         if self.is_running:
             self.log("Cannot save rules while simulating, please pause the simulation first", "WARNING")
             return
@@ -588,159 +658,40 @@ ENV_HEIGHT = {env_height}
         except Exception as e:
             self.log(f"Error saving rules: {e}", "ERROR")
 
-    def load_model(self):
-        """加载已训练模型"""
-        try:
-            model_path = dpg.get_value("model_path_input")
-
-            if not os.path.isfile(model_path):
-                self.log(f"Model file not found: {model_path}", "ERROR")
-                return
-            
-            state_dict = torch.load(model_path)
-            self.agent.model.load_state_dict(state_dict)
-
-            self.log(f"Model loaded from {model_path}")
-        except Exception as e:
-            self.log(f"Error loading model: {e}", "ERROR")
-
-    # def start_training(self):
-    #     """开始训练模型"""
-    #     state_size = self.env.state_size
-    #     action_size = self.env.action_size
-    #     policy_net = self.agent.model
-    #     target_net = DQNetwork(state_size, action_size, self.configs["HIDDEN_SIZE"])
-    #     target_net.load_state_dict(policy_net.state_dict())
-    #     self.is_training = True
-    #     optimizer = optim.Adam(policy_net.parameters(), lr=self.configs["LEARNING_RATE"])
-    #     replay_buffer = ExperienceReplay(self.configs["BUFFER_SIZE"])
-    
-    #     epsilon = self.configs["EPSILON_START"]
-    #     episode_rewards = []
-
-    #     for episode in range(self.configs["MAX_EPISODES"]):
-    #         state = self.env.reset(int(self.configs["INITIAL_CELL_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
-    #         total_reward = 0
-    #         steps = 0
-
-    #         while steps < self.configs["MAX_STEPS"]:
-    #             actions = self.agent.act(state, epsilon)
-
-    #             next_state, reward, done, _ = self.env.step(actions, steps)
-
-    #             if len(state) > 0:
-    #                 for i in range(len(state)):
-    #                     replay_buffer.push(
-    #                         state[i], actions[i], reward,
-    #                         next_state[i] if i < len(next_state) else np.zeros(state_size), done
-    #                     )
-                
-    #             state = next_state
-    #             total_reward += reward
-    #             steps += 1
-
-    #             if len(replay_buffer) >= self.configs["BATCH_SIZE"]:
-    #                 self.train_model(policy_net, target_net, optimizer, replay_buffer)
-                
-    #             if done:
-    #                 break
-            
-    #         if episode % self.configs["TARGET_UPDATE"] == 0:
-    #             target_net.load_state_dict(policy_net.state_dict())
-            
-    #         epsilon = max(self.configs["EPSILON_END"], epsilon * self.configs["EPSILON_DECAY"])
-
-    #         episode_rewards.append(total_reward)
-    #         self.log(f"Episode {episode}, Reward: {total_reward:.3f}, Population: {self.env.get_population()}, Epsilon: {epsilon:.3f}")
-            
-    #     torch.save(policy_net.state_dict(), "trained_model.pth")
-    # 
-    # def train_model(self, policy_net, target_net, optimizer, replay_buffer):
-    #     """
-    #     训练 policy_network
-        
-    #     :param policy_net: 要训练的网络
-    #     :param replay_buffer: 经验回放缓冲区
-    #     """
-    #     state, actions, rewards, next_state, done = replay_buffer.sample(self.configs["BATCH_SIZE"])
-
-    #     state = torch.FloatTensor(state)
-    #     actions = torch.LongTensor(actions)
-    #     rewards = torch.FloatTensor(rewards)
-    #     next_states = torch.FloatTensor(next_states)
-    #     done = torch.BoolTensor(done)
-
-    #     current_q = policy_net(state).gather(1, actions.unsqueeze(1))
-
-    #     next_q = target_net(next_state).max(1)[0].detach()
-    #     target_q = rewards + (self.configs["GAMMA"] * next_q * (~done))
-
-    #     loss = F.mse_loss(current_q.squeeze(), target_q)
-
-    #     optimizer.zero_grad()
-    #     loss.backward()
-    #     optimizer.step()
-
-    def change_update_interval(self, sender, app_data):
+    def random_initialize(self):
         """
-        Update Interval 滑动条的回调函数
+        随机初始化，依据 configuration 中的 initial_portion 更新
         """
-        self.update_interval = app_data
-        self.log(f"Update interval changed to {app_data:.2f} seconds")
+        self.env.reset(int(self.configs["INITIAL_CELLS_PORTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
+        self.draw_cells()
+        self.update_statistics()
+        self.log("Randomly initialized the environment.")
 
+    # Simulation Functions
     def start_simulation(self):
+        """
+        Start 按钮的回调函数: 启动模拟
+        """
         self.is_running = True
         self.log("Simulation started")
 
-    def export_state(self):
-        """将当前网格状态导出到 JSON 文件"""
-        try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"simulation_state_{timestamp}.json"
-            
-            state_data = {
-                "timestamp": timestamp,
-                "environment": {
-                    "width": Config.ENV_WIDTH,
-                    "height": Config.ENV_HEIGHT,
-                    "population": self.stats['population'],
-                    "density": self.stats['density']
-                },
-                "simulation": {
-                    "step_count": self.step_count,
-                    "episode": self.stats['episode'],
-                    "total_reward": self.stats['reward'],
-                    "average_reward": self.stats['average_reward']
-                },
-                "cell_positions": list(self.cell_positions),
-                "settings": {
-                    "update_interval": self.update_interval,
-                    "cell_size": self.cell_size,
-                    "is_running": self.is_running,
-                    "is_training": self.is_training,
-                    "debug_mode": self.debug_mode,
-                    "edit_mode": self.edit_mode,
-                    "show_grid_lines": self.show_grid_lines
-                }
-            }
-            
-            with open(filename, 'w') as f:
-                json.dump(state_data, f, indent=2)
-                
-            self.log(f"Simulation state exported to {filename}")
-            
-        except Exception as e:
-            self.log(f"Error exporting state: {e}", "ERROR")
-
     def pause_simulation(self):
+        """
+        Pasue 按钮的回调函数: 停止模拟
+        """
         self.is_running = False
         self.log("Simulation paused")
 
     def step_simulation(self):
-        """单步更新"""
-        if self.env is not None:
+        """
+        Step 的回调函数: 单步更新
+        若此时正在模拟，会先暂停模拟
+        """
+        if  self.env is not None:
             try:
-                state = self.env._get_observation()
+                if self.is_running:
+                    self.pause_simulation()
+                state = self.env.get_observation()
                 if self.ai and state.size > 0:
                     epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
                     actions = self.agent.act(state, epsilon=epsilon)
@@ -766,9 +717,12 @@ ENV_HEIGHT = {env_height}
                 self.log(f"Error stepping simulation: {e}", "ERROR")
 
     def reset_simulation(self):
-        """Reset the simulation"""
+        """
+        Reset 按钮的回调函数: 将网格回退到初始状态 (清除所有细胞和统计值)
+        """
         if self.env is not None:
             try:
+                self.is_running = False
                 self.initialize_environment()
                 self.step_count = 0
                 self.stats['reward'] = 0.0
@@ -777,17 +731,44 @@ ENV_HEIGHT = {env_height}
                 self.draw_cells()
                 self.update_statistics()
                 self.log("Simulation reset")
-                self.is_running = False
             except Exception as e:
                 self.log(f"Error resetting simulation: {e}", "ERROR")
 
-    def toggle_grid_line(self, sender, app_data):
+    # Functional Functions
+    def grid_click_callback(self, sender):
         """
-        Toggle Grid Line Checkbox 的回调函数
+        网格点击事件的 Handler
         """
-        self.show_grid_line = app_data
-        self.draw_grid()
-        self.log(f"Grid lines {'showed' if app_data else 'hidden'}")
+
+        if not self.edit_mode:
+            self.log("Edit mode is disabled. Enable edit mode to toggle cell state.")
+            return
+        
+        if self.is_running:
+            self.log("Edit is prohibited while simulating. Please pause the simulation first", "WARNING")
+            return
+        
+        try:
+            # 获取鼠标位置
+            mouse_pos = dpg.get_mouse_pos()
+            if not dpg.does_alias_exist("grid_background"):
+                self.log("Grid draw area not found", "ERROR")
+            item_pos = dpg.get_item_pos("grid_drawlist")
+
+            # 计算相对坐标 (10 和 65 是为了补偿侧边宽度)
+            rx = int((mouse_pos[0] - item_pos[0] - 10) / self.cell_size)
+            ry = int((mouse_pos[1] - item_pos[1] - 65) / self.cell_size)
+
+            if self.env.is_position_empty(rx, ry):
+                self.env.set_cell(rx, ry)
+                self.log(f"Cell added at ({rx}, {ry})")
+            else:
+                self.env.remove_cell(rx, ry)
+                self.log(f"Cell removed at ({rx}, {ry})")
+            self.draw_cells()
+            self.update_statistics()
+        except Exception as e:
+            self.log(f"Err handling grid click: {e}", "ERROR")
 
     def force_garbage_collection(self):
         """
@@ -818,20 +799,23 @@ ENV_HEIGHT = {env_height}
                 self.log("Grid cleared")
             except Exception as e:
                 self.log(f"Error clearing grid: {e}", "ERROR")
-    
+
     def update_statistics(self):
-        """更新统计信息显示"""
+        """
+        更新统计信息显示
+        """
         try:
             current_time = time.time()
             elapsed = current_time - self.last_update_time
             self.frame_count += 1
 
-            # Update FPS every second
+            # 每一秒更新一次 FPS
             if elapsed >= 1.0:
                 self.stats['step_per_sec'] = self.frame_count / elapsed
                 self.frame_count = 0
                 self.last_update_time = current_time
             
+            # 更新统计值
             self.stats['population'] = self.env.get_population()
             self.stats['density'] = self.stats['population'] / (self.configs['ENV_HEIGHT'] * self.configs['ENV_WIDTH'])
 
@@ -845,102 +829,6 @@ ENV_HEIGHT = {env_height}
             dpg.set_value("stat_loss", f"Training Loss: {self.stats['training_loss']:.3f}")
         except Exception as e:
             self.log(f"Error updating statistics: {e}", "ERROR")
-
-    def draw_grid(self):
-        """
-        绘制整个界面
-        """
-        if not dpg.does_alias_exist("grid_drawlist"):
-            return
-        
-        # 清空背景
-        dpg.delete_item("grid_drawlist", children_only=True)
-
-        # 画背景
-        dpg.draw_rectangle(
-            (0, 0),
-            (self.configs["ENV_WIDTH"] * self.cell_size, self.configs["ENV_HEIGHT"] * self.cell_size),
-            color=(0, 0, 0, 255),
-            fill=(0, 0, 0, 255),
-            parent="grid_drawlist",
-            tag="grid_background"
-        )
-
-        # 画细胞
-        self.draw_cells()
-
-        # 画网格线
-        self.draw_grid_line()
-
-    def draw_grid_line(self):
-        """
-        生成网格线
-        """
-        if not dpg.does_alias_exist("grid_drawlist"):
-            return
-        
-        if self.show_grid_line:
-            grid_color = (255, 255, 255, 50)
-
-            # Verticals
-            for x in range(self.configs["ENV_WIDTH"] + 1):
-                x_pos = x * self.cell_size
-                dpg.draw_line(
-                    (x_pos, 0),
-                    (x_pos, self.configs['ENV_HEIGHT'] * self.cell_size),
-                    color=grid_color,
-                    thickness=1,
-                    parent="grid_drawlist"
-                )
-            
-            # Horizentals
-            for y in range(self.configs['ENV_HEIGHT'] + 1):
-                y_pos = y * self.cell_size
-                dpg.draw_line(
-                    (0, y_pos),
-                    (self.configs['ENV_WIDTH'] * self.cell_size, y_pos),
-                    color=grid_color,
-                    thickness=1,
-                    parent='grid_drawlist'
-                )
-
-    def draw_cells(self):
-        """
-        绘制细胞
-        """
-        if not dpg.does_alias_exist("grid_drawlist"):
-            return
-        
-        # 先清空细胞
-        for cell_id in self.cell_id_existed_on_grid:
-            if dpg.does_alias_exist(cell_id):
-                dpg.delete_item(cell_id)
-        
-        self.cell_id_existed_on_grid.clear()
-
-        # 画细胞
-        for cell in self.env.get_cells():
-            dpg.draw_rectangle(
-                [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
-                [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
-                color=(0, 0, 255, 255),
-                fill=(0, 0, 255, 255),
-                parent="grid_drawlist",
-                tag=f"C{cell['id']}"
-            )
-            self.log(f"{cell['x']}, {cell['y']}")
-            self.cell_id_existed_on_grid.add(f"C{cell['id']}")
-
-    def log(self, message, level="INFO"):
-        """
-        记录日志信息到日志队列中。
-        
-        :param message: 日志信息
-        :param level: 日志等级
-        """
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        formatted_message = f"[{timestamp}] [{level}] {message}"
-        self.log_queue.put(formatted_message)
 
     def process_log(self):
         """
@@ -973,20 +861,20 @@ ENV_HEIGHT = {env_height}
         while True:
             if self.is_running and self.env is not None:
                 try:
-                    state = self.env._get_observation()
+                    state = self.env.get_observation()
                     if self.ai and state.size > 0:
-                        epsilon = dpg.get_value("epsilon_slider") if self.is_training else 0.0
-                        actions = self.agent.act(state, epsilon=epsilon)
-                        self.log(f"Agent selected {len(actions)} actions with epsilon={epsilon:.2f}", "DEBUG")
+                        actions = self.agent.act(state, epsilon=0)
+                        self.log(f"Agent selected {len(actions)} actions", "DEBUG")
                     elif not self.ai:
-                        actions=None
+                        actions = None
                     else:
                         actions = None
                         self.log("No cells alive, no action takes", "DEBUG")
+
                     next_state, reward, done, info = self.env.step(actions)
+
                     self.stats['reward'] += reward
                     self.step_count += 1
-
                     self.stats['average_reward'] = self.stats['average_reward'] * 0.95 + reward * 0.05
 
                     if done:
@@ -1012,7 +900,7 @@ ENV_HEIGHT = {env_height}
         
         self.initialize_gui()
 
-        # Start the simulation loop in a separate thread
+        # 在另一个 thread 中启动模拟循环
         simulation_thread = threading.Thread(target=self.simulation_loop, daemon=True)
         simulation_thread.start()
 
@@ -1029,4 +917,3 @@ ENV_HEIGHT = {env_height}
 if __name__ == "__main__":
     gui = GUI()
     gui.run()
-

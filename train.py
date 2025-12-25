@@ -1,30 +1,29 @@
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+from torch.optim.lr_scheduler import CosineAnnealingLR
 import numpy as np
 from Module.Environment.game_env import SmartGameEnv
 from Module.Models.policy_network import DQNetwork
 from Module.Agent.cell_agent import CellAgent
 from Module.Utils.experience_replay import ExperienceReplay
 from Module.Configs.config import Config
-from torch.optim.lr_scheduler import CosineAnnealingLR
 import os
+import datetime
 
 def train():
     # 初始化环境
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
     configs = Config()
+    log = open(f".\\Models\\Logs\\{timestamp}.log", 'w')
 
     env = SmartGameEnv(
         width=configs["ENV_WIDTH"],
         height=configs["ENV_HEIGHT"],
         config_file=configs["CONFIG_FILE"]
     )
-    
-    # 打印当前配置
-    # print("Initial configuration:")
-    # env.print_config()
     
     # 初始化模型和智能体
     state_size = env.state_size 
@@ -44,17 +43,10 @@ def train():
     episode_rewards = []
     
     for episode in range(configs["MAX_EPISODES"]):
-        state = env.reset(int(configs["INITIAL_CELLS_POTION"] * configs["ENV_WIDTH"] * configs["ENV_HEIGHT"]))
-        # print(f"Initial population: {env.get_population()}, Density: {env.get_density():.3f}")
+        state = env.reset(int(configs["INITIAL_CELLS_PORTION"] * configs["ENV_WIDTH"] * configs["ENV_HEIGHT"]))
         total_reward = 0
         steps = 0
         
-        # for i in env.get_grid_state():
-        #     for j in i:
-        #         print('#' if j == 1 else ' ', end='')
-        #     print()
-        # print("--------------------------------")
-
         while steps < configs["MAX_STEPS"]:
             # 获取动作
             initial = env.get_population()
@@ -68,7 +60,7 @@ def train():
             if len(state) > 0:
                 for i in range(len(state)):
                     replay_buffer.push(
-                        state[i], actions[i], reward,  # type: ignore
+                        state[i], actions[i], reward,
                         next_state[i] if i < len(next_state) else np.zeros(state_size),
                         done
                     )
@@ -77,11 +69,7 @@ def train():
             total_reward += reward
             steps += 1
 
-            # for i in env.get_grid_state():
-            #     for j in i:
-            #         print('#' if j == 1 else ' ', end='')
-            #     print()
-            # print("--------------------------------")
+            # 用于输出每个 Step 的状态
             # print(f"Step: {steps}, Reward: {reward:.3f}, Total Reward: {total_reward:.3f}, Population: {env.get_population()}, Decline: {(initial - env.get_population()) / initial:.3f}", end='\n')
 
             
@@ -96,16 +84,21 @@ def train():
         if episode % configs["TARGET_UPDATE"] == 0:
             target_net.load_state_dict(policy_net.state_dict())
         
-        # 衰减epsilon
+        # 衰减 epsilon 和 learning rate
         epsilon = max(configs["EPSILON_END"], epsilon * configs["EPSILON_DECAY"])
+        scheduler.step()
         
         episode_rewards.append(total_reward)
-        scheduler.step()
+        # print 用于输出到 stdout 使得 GUI 中的调用可以获取到信息
+        # write file 操作用于保存到 Models\Logs 文件夹中
         print(f"Episode {episode}, Reward: {total_reward:.3f}, "
               f"Population: {env.get_population()}, Epsilon: {epsilon:.3f}, Steps: {steps}")
+        log.write(f"Episode {episode}, Reward: {total_reward:.3f}, "
+              f"Population: {env.get_population()}, Epsilon: {epsilon:.3f}, Steps: {steps}\n")
     
     # 保存模型
-    torch.save(policy_net.state_dict(), "trained_model.pth")
+    torch.save(policy_net.state_dict(), f".\\Models\\Models\\{timestamp}.pth")
+    log.close()
 
 def train_model(policy_net, target_net, optimizer, replay_buffer, config):
     """

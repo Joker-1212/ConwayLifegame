@@ -95,7 +95,7 @@ if exist "%BINDINGS_BUILD_DIR%\Release\smart_life_core.pyd" (
     echo Copied smart_life_core.pyd to project root
 ) else if exist "%BINDINGS_BUILD_DIR%\smart_life_core.pyd" (
     copy "%BINDINGS_BUILD_DIR%\smart_life_core.pyd" "smart_life_core.pyd"
-    echo Copied smart_life_core.pyd to project root
+    echo Copied smart_life_core.pyd to Module\Environment\smart_life_core.pyd
 ) else (
     echo Warning: Could not find built Python module
 )
@@ -112,5 +112,5 @@ echo You can now run:
 echo   python .\test_windows.py
 echo   python .\GUI.py
 echo   python .\train.py
-echo   python .\evaluate.py
+echo   python .\evaluate.py .\Models\Default_model.pth
 echo.
