@@ -15,19 +15,19 @@ class Config:
         # 训练参数
         self.configs["LEARNING_RATE"] = 1e-3
         self.configs["GAMMA"] = 0.99
-        self.configs["BATCH_SIZE"] = 32
-        self.configs["BUFFER_SIZE"] = 10000
+        self.configs["BATCH_SIZE"] = 64
+        self.configs["BUFFER_SIZE"] = 50000
         self.configs["TARGET_UPDATE"] = 100
         self.configs["INITIAL_CELLS_POTION"] = 0.5
         # 模型参数
-        self.configs["HIDDEN_SIZE"] = 256
+        self.configs["HIDDEN_SIZE"] = 512
         
         # 训练控制
-        self.configs["MAX_EPISODES"] = 1000
-        self.configs["MAX_STEPS"] = 1000
+        self.configs["MAX_EPISODES"] = 2000
+        self.configs["MAX_STEPS"] = 500
         self.configs["EPSILON_START"] = 1.0
-        self.configs["EPSILON_END"] = 0
-        self.configs["EPSILON_DECAY"] = 0.85
+        self.configs["EPSILON_END"] = 0.01
+        self.configs["EPSILON_DECAY"] = 0.95
 
         self.load_from_file()
 
