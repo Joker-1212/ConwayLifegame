@@ -140,7 +140,7 @@ class GUI:
                             label="Update Interval",
                             default_value=self.update_interval,
                             min_value=0.01,
-                            max_value=10.0,
+                            max_value=5.0,
                             callback=self.change_update_interval
                         )
                         dpg.add_slider_int(
@@ -168,7 +168,7 @@ class GUI:
                         dpg.add_button(label="Save Rules", callback=self.save_rules)
                     
                     # 自动训练和模型导入
-                    with dpg.collapsing_header(label="Auto Training"):
+                    with dpg.collapsing_header(label="Training and Model Loading"):
                         dpg.add_text("One-Click Training")
                         dpg.add_button(label="Start Auto Training", callback=self.auto_training)
                         dpg.add_progress_bar(label="Training Progress", default_value=0.0, tag="training_progress")

@@ -18,7 +18,7 @@ class Config:
         self.configs["BATCH_SIZE"] = 32
         self.configs["BUFFER_SIZE"] = 10000
         self.configs["TARGET_UPDATE"] = 100
-        self.configs["INITIAL_CELLS_PORTION"] = 0.5
+        self.configs["INITIAL_CELLS_PORTION"] = 0.3
         # 模型参数
         self.configs["HIDDEN_SIZE"] = 512
         
