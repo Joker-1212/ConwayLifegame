@@ -431,19 +431,6 @@ def __calculate_reward(self, step):
 - 感谢康威教授提出的经典生命游戏
 - 感谢 PyTorch、PyBind11、Dear PyGUI 等开源项目
 
-## 贡献比例
-
-周可 (PB25051010):
-- 项目总体架构
-- 强化学习部分构建
-- 编译配置
-- GUI 编写
-
-陈博涵 (PB25061150)
-- C++ 核心编写
-- 调优强化学习参数
-- 宣传部分 (视频、PPT 等)
-
 ## 反馈
 
 若有 Bug 或想要的新 feature，请在 [https://github.com/Joker-1212/ConwayLifegame/issues](https://github.com/Joker-1212/ConwayLifegame/issues) 中与我们分享！
