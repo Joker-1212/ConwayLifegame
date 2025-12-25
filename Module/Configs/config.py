@@ -18,7 +18,7 @@ class Config:
         self.configs["BATCH_SIZE"] = 32
         self.configs["BUFFER_SIZE"] = 10000
         self.configs["TARGET_UPDATE"] = 100
-        self.configs["INITIAL_CELLS_POTION"] = 0.5
+        self.configs["INITIAL_CELLS_PORTION"] = 0.5
         # 模型参数
         self.configs["HIDDEN_SIZE"] = 512
         
@@ -52,6 +52,7 @@ class Config:
                             value = int(value)
                     self.configs[key] = value
     
+    # 我们可以像使用字典一样使用 Config 对象
     def __setitem__(self, key, value):
         self.configs[key] = value
     

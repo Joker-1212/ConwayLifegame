@@ -13,3 +13,5 @@ cpp_core/项目：细胞自动机/*
 trained_model.pth
 temp.py
 simulation*
+/Models/Models/*
+Models/Logs/*

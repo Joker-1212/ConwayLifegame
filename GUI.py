@@ -61,8 +61,9 @@ class GUI:
         """
         记录日志信息到日志队列中。
         
-        :param message: 日志信息
-        :param level: 日志等级: INFO/ERROR/DEBUG
+        Args:
+            message: 日志信息
+            level: 日志等级: INFO/ERROR/DEBUG
         """
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         formatted_message = f"[{timestamp}] [{level}] {message}"
@@ -191,7 +192,7 @@ class GUI:
                     # Grid 环境配置
                     with dpg.collapsing_header(label="Configuration"):
                         dpg.add_input_int(label="Grid Size", default_value=self.configs["ENV_WIDTH"], tag="config_size")
-                        dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_POTION"], tag="config_density")
+                        dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_PORTION"], tag="config_density")
                         dpg.add_button(label="Apply Config", callback=self.apply_config)
                 
                 # 游戏网格
@@ -358,7 +359,9 @@ class GUI:
 
     # AI Function related
     def auto_training(self):
-        """自动训练"""
+        """
+        自动训练
+        """
         if self.training_auto:
             self.log("Auto training is already running", "WARNING")
             return
@@ -379,7 +382,9 @@ class GUI:
             dpg.set_value("training_status", "Status: Ready")
 
     def run_training(self):
-        """运行训练脚本"""
+        """
+        运行训练脚本
+        """
         try:
             self.log("Starting trainging process...")
 
@@ -429,7 +434,9 @@ class GUI:
             dpg.set_value("Training progress", 0.0)
 
     def load_model(self):
-        """加载已训练模型"""
+        """
+        加载已训练模型
+        """
         try:
             model_path = dpg.get_value("model_path_input")
 
@@ -465,7 +472,7 @@ class GUI:
 
             self.configs["ENV_WIDTH"] = new_width
             self.configs["ENV_HEIGHT"] = new_height
-            self.configs["INITIAL_CELLS_POTION"] = new_density
+            self.configs["INITIAL_CELLS_PORTION"] = new_density
 
             # 重新初始化环境
             self.initialize_environment()
@@ -481,7 +488,9 @@ class GUI:
             self.log(f"Error applying config: {e}", "ERROR")
 
     def apply_rules(self):
-        """应用新的游戏规则"""
+        """
+        应用新的游戏规则
+        """
         if self.is_running:
             self.log("Cannot apply rules while simulating, please pause the simulation first", "WARNING")
             return
@@ -569,6 +578,9 @@ class GUI:
             self.log(f"Error reloading rules: {e}", "ERROR")
 
     def save_rules(self):
+        """
+        保存当前游戏规则至文件
+        """
         if self.is_running:
             self.log("Cannot save rules while simulating, please pause the simulation first", "WARNING")
             return
@@ -647,7 +659,10 @@ ENV_HEIGHT = {env_height}
             self.log(f"Error saving rules: {e}", "ERROR")
 
     def random_initialize(self):
-        self.env.reset(int(self.configs["INITIAL_CELLS_POTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
+        """
+        随机初始化，依据 configuration 中的 initial_portion 更新
+        """
+        self.env.reset(int(self.configs["INITIAL_CELLS_PORTION"] * self.configs["ENV_WIDTH"] * self.configs["ENV_HEIGHT"]))
         self.draw_cells()
         self.update_statistics()
         self.log("Randomly initialized the environment.")
