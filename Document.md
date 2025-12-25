@@ -304,8 +304,8 @@ python train.py
 - `MAX_STEPS`: 每回合最大步数（默认：500）
 - `LEARNING_RATE`: 学习率（默认：1e-3）
 - `GAMMA`: 折扣因子（默认：0.99）
-- `BATCH_SIZE`: 批大小（默认：32）
-- `BUFFER_SIZE`: 经验回放缓冲区大小（默认：10000）
+- `BATCH_SIZE`: 批大小（默认：64）
+- `BUFFER_SIZE`: 经验回放缓冲区大小（默认：50000）
 
 ### 评估模式
 
