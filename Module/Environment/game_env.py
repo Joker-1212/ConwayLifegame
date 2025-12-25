@@ -105,7 +105,7 @@ ENV_HEIGHT = 100
         # 基础奖励：种群数量
         reward = population / (self.width * self.height)
 
-        # 密度额外奖励：避免过度拥挤或过于稀疏
+        # 密度额外奖励或惩罚：避免过度拥挤或过于稀疏
         reward += 0.1
         if density <= (self.configs["LIVE_MIN"] - 1.0) / 8 or density >= (self.configs["LIVE_MAX"] + 1.0) / 8:
             reward -= 0.1
@@ -116,15 +116,7 @@ ENV_HEIGHT = 100
         # 额外奖励：种群存活时间
         reward += step * 0.002
 
-        # 额外惩罚：过早死亡
-        if self.__is_done():
-            if step <= 200:
-                reward -= 0.05
-            if step <= 500:
-                reward -= 0.05
-        
-        # 额外奖励：存活时间达到最大，依据存活细胞数目给予奖励
-        if step == 1000:
+        if step == 500:
             reward += population / (self.width * self.height) * 2
 
         return reward
