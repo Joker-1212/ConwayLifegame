@@ -14,6 +14,9 @@ import datetime
 def train():
     # 初始化环境
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    if not os.path.exists("./Models/Logs"):
+        os.mkdir("./Models/Logs")
+        os.mkdir("./Models/Models")
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
 
     configs = Config()
