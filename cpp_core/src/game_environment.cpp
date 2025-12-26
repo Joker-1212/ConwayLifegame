@@ -190,6 +190,50 @@ void GameEnvironment::update()
             cells_[i]->increaseAge();
         }
     }
+
+    // 年龄越大死亡率越高
+    // 死亡率=基础死亡率*[年龄/10]
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        if (cells_[i]->isAlive())
+        {
+            double age_factor = static_cast<double>(cells_[i]->getAge()) / 10.0;
+            double adjusted_death_rate = Death_Rate * (int)age_factor;
+            double prob = dist(gen);
+            if (prob < adjusted_death_rate)
+            {
+                Position pos = cells_[i]->getPosition();
+                removeCell(pos);
+            }
+        }
+    }
+
+    // 死亡率导致的细胞死亡
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        if (cells_[i]->isAlive())
+        {
+            double prob = dist(gen);
+            if (prob < Death_Rate)
+            {
+                Position pos = cells_[i]->getPosition();
+                removeCell(pos);
+            }
+        }
+    }
+
+    // 能量耗尽导致的细胞死亡
+    for (int i = 0; i < cells_.size(); i++)
+    {
+        if (cells_[i]->isAlive())
+        {
+            if (cells_[i]->getEnergy() <= 0.0)
+            {
+                Position pos = cells_[i]->getPosition();
+                removeCell(pos);
+            }
+        }
+    }
 }
 void GameEnvironment::updateWithMoves(const std::vector<int> &moves)
 {
