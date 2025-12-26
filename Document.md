@@ -104,12 +104,12 @@ ConwayLifegame++/
 #### Python依赖
 ```bash
 # 创建并激活环境
-conda create -n conway python=3.9
+conda create -n conway
 conda activate conway
 
 # 安装Python依赖
-pip install -r requirements.txt
-pip install dearpygui pybind11
+conda install --yes --file ./requirements.txt
+pip install dearpygui
 ```
 
 ### 构建步骤
