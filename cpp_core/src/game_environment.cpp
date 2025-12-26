@@ -34,9 +34,16 @@ const std::vector<std::shared_ptr<Cell>> &GameEnvironment::getCells() const
 
 void GameEnvironment::initializeRandom(int num_cells)
 {
-    if (num_cells <= 0)
-        return;
-
+    // 先清空所有细胞
+    cells_.clear();
+    for (int i = 0; i < height_; i++)
+    {
+        for (int j = 0; j < width_; j++)
+        {
+            grid_[i][j] = false;
+        }
+    }
+    // 随机放置细胞
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> distX(0, width_ - 1);
