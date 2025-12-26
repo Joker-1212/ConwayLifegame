@@ -8,8 +8,8 @@
 
 1. 每个细胞都可以看到附近一定范围内的细胞。
 2. 在下一时刻可以存活的细胞，可以选择向八个方向中的任意一个移动。当然，也可以选择不移动。
-3. 由于细胞出现了智慧，消耗的资源增加了，每个细胞都有一定概率在下一时刻死亡。细胞存活时间越长，死亡概率越大。具体而言：$死亡率 = 基础死亡率 \times \left\lfloor \frac{年龄}{10} \right\rfloor$
-4. 细胞现在被赋予了另一个属性：能量值。每次移动会消耗一定的能量值，每个回合都有一定概率回复一定能量值。
+3. 由于细胞出现了智慧，消耗的资源增加了，每个细胞都有一定概率在下一时刻死亡。
+4. 细胞现在被赋予了另一个属性：能量值。每次移动会消耗一定的能量值，每个回合都有一定概率回复一定能量值。没有能量的细胞不可移动
 5. 如果多个细胞选择同时挤入一个空方格，由于空间不足，会随机让一个细胞进入该方格，而其余细胞无法移动。
 6. 同时，我们抛弃了传统的康威游戏 2-3-3 的规则。现在，你可以自由指定你想要的规则！
 
@@ -46,9 +46,11 @@ pip install dearpygui
 #### 系统依赖
 
 **Windows:**
+
 - 安装 MSVC 编译器：[Visual Studio Build Tools](https://visualstudio.microsoft.com/zh-hans/downloads/#build-tools-for-visual-studio-2022)
 
 **Linux:**
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get update
@@ -66,6 +68,7 @@ sudo pacman -S cmake gcc python
 #### Windows 构建
 
 运行构建脚本：
+
 ```bash
 .\build.bat
 ```
@@ -73,11 +76,13 @@ sudo pacman -S cmake gcc python
 #### Linux 构建
 
 1. 给构建脚本添加执行权限：
+
 ```bash
 chmod +x build.sh
 ```
 
 2. 运行构建脚本：
+
 ```bash
 ./build.sh
 ```
@@ -85,11 +90,13 @@ chmod +x build.sh
 ### 3. 验证安装
 
 运行测试脚本验证构建是否成功：
+
 ```bash
 python test_windows.py
 ```
 
 或者启动图形界面：
+
 ```bash
 python GUI.py
 ```

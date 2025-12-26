@@ -8,20 +8,22 @@ ConwayLifegame++ 是一个基于经典康威生命游戏的强化学习扩展项
 ### 核心特性
 
 1. **增强的生命游戏规则**：
+
    - 细胞具有视野范围，可以感知周围环境
-   - 细胞可以在8个方向上移动或选择不动
+   - 细胞可以在 8 个方向上移动或选择不动
    - 细胞具有年龄和能量属性，影响生存概率
    - 引入细胞死亡概率和能量消耗机制
 
 2. **混合架构设计**：
-   - 使用C++编写高性能游戏核心逻辑
-   - 通过PyBind11将C++核心暴露给Python
-   - 使用PyTorch实现深度Q学习算法
-   - 使用Dear PyGUI构建图形用户界面
+
+   - 使用 C++编写高性能游戏核心逻辑
+   - 通过 PyBind11 将 C++核心暴露给 Python
+   - 使用 PyTorch 实现深度 Q 学习算法
+   - 使用 Dear PyGUI 构建图形用户界面
 
 3. **强化学习集成**：
    - 每个细胞作为独立的智能体进行决策
-   - 使用深度Q网络（DQN）学习最优移动策略
+   - 使用深度 Q 网络（DQN）学习最优移动策略
    - 支持经验回放和目标网络等高级技术
    - 可训练模型以最大化种群生存时间
 
@@ -74,7 +76,7 @@ ConwayLifegame++/
 
 - **核心语言**: C++ 17, Python 3.x
 - **机器学习框架**: PyTorch
-- **GUI框架**: Dear PyGUI
+- **GUI 框架**: Dear PyGUI
 - **绑定工具**: PyBind11
 - **构建系统**: CMake
 - **包管理**: Conda/Pip
@@ -87,21 +89,25 @@ ConwayLifegame++/
 
 项目支持 Windows 和 Linux 平台，macOS 理论上也可编译但需要额外配置。
 
-#### Python环境
+#### Python 环境
+
 - Python 3.10+
 - 推荐使用 Conda 或虚拟环境管理依赖
 
 #### 系统依赖
 
 **Windows:**
+
 - MSVC 编译器 (Visual Studio 2022 Build Tools)
 
 **Linux:**
+
 - GCC/G++ 编译器 (g++ 9.0+)
 - Python 开发包 (python3-dev)
 - 必要的构建工具
 
-#### Python依赖
+#### Python 依赖
+
 ```bash
 # 创建并激活环境
 conda create -n conway
@@ -114,43 +120,49 @@ pip install dearpygui
 
 ### 构建步骤
 
-#### Windows自动构建
+#### Windows 自动构建
 
 运行构建脚本：
+
 ```bash
 .\build.bat
 ```
 
 构建过程包括：
+
 1. 检查依赖工具（CMake）
-2. 构建C++核心库（生成 smart_life_core.lib）
-3. 构建Python绑定（生成 smart_life_core.pyd）
+2. 构建 C++核心库（生成 smart_life_core.lib）
+3. 构建 Python 绑定（生成 smart_life_core.pyd）
 4. 复制生成的模块到项目根目录
 
-#### Linux自动构建
+#### Linux 自动构建
 
 1. 给构建脚本添加执行权限：
+
 ```bash
 chmod +x build.sh
 ```
 
 2. 运行构建脚本：
+
 ```bash
 ./build.sh
 ```
 
 构建过程包括：
-1. 检查系统依赖（CMake、g++、Python开发包）
-2. 自动检测pybind11安装位置
-3. 构建C++核心库（生成 libsmart_life_core.a）
-4. 构建Python绑定（生成 smart_life_core.so）
+
+1. 检查系统依赖（CMake、g++、Python 开发包）
+2. 自动检测 pybind11 安装位置
+3. 构建 C++核心库（生成 libsmart_life_core.a）
+4. 构建 Python 绑定（生成 smart_life_core.so）
 5. 复制生成的模块到项目根目录
 
 #### 手动构建（高级用户）
 
-1. **构建C++核心库**:
+1. **构建 C++核心库**:
 
 **Windows:**
+
 ```bash
 cd cpp_core
 mkdir build && cd build
@@ -159,6 +171,7 @@ cmake --build . --config Release
 ```
 
 **Linux:**
+
 ```bash
 cd cpp_core
 mkdir build && cd build
@@ -166,9 +179,10 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
 
-2. **构建Python绑定**:
+2. **构建 Python 绑定**:
 
 **Windows:**
+
 ```bash
 cd python_bindings
 mkdir build && cd build
@@ -177,6 +191,7 @@ cmake --build . --config Release
 ```
 
 **Linux:**
+
 ```bash
 cd python_bindings
 mkdir build && cd build
@@ -187,11 +202,13 @@ cmake --build .
 ### 验证安装
 
 构建完成后，运行测试脚本验证安装：
+
 ```bash
 python test_windows.py
 ```
 
 或直接启动图形界面：
+
 ```bash
 python GUI.py
 ```
@@ -200,21 +217,24 @@ python GUI.py
 
 #### 常见构建问题
 
-1. **CMake找不到Python**:
-   - Windows: 确保Python已安装且添加到PATH
-   - Linux: 安装python3-dev包
+1. **CMake 找不到 Python**:
 
-2. **pybind11找不到**:
+   - Windows: 确保 Python 已安装且添加到 PATH
+   - Linux: 安装 python3-dev 包
+
+2. **pybind11 找不到**:
+
    - 运行 `pip install pybind11`
-   - 手动指定pybind11路径：`-Dpybind11_DIR=/path/to/pybind11/share/cmake/pybind11`
+   - 手动指定 pybind11 路径：`-Dpybind11_DIR=/path/to/pybind11/share/cmake/pybind11`
 
 3. **导入错误**:
-   - Windows: 确保smart_life_core.pyd在项目根目录
-   - Linux: 确保smart_life_core.so在项目根目录
-   - 设置PYTHONPATH: `export PYTHONPATH=$PYTHONPATH:$(pwd)`
+
+   - Windows: 确保 smart_life_core.pyd 在项目根目录
+   - Linux: 确保 smart_life_core.so 在项目根目录
+   - 设置 PYTHONPATH: `export PYTHONPATH=$PYTHONPATH:$(pwd)`
 
 4. **链接错误**:
-   - 确保C++核心库已正确构建
+   - 确保 C++核心库已正确构建
    - 检查库文件路径是否正确
 
 ## 配置文件
@@ -226,7 +246,7 @@ python GUI.py
 # Minimum number of neighbors for a cell to survive
 LIVE_MIN = 2
 
-# Maximum number of neighbors for a cell to survive  
+# Maximum number of neighbors for a cell to survive
 LIVE_MAX = 3
 
 # Minimum number of neighbors for a cell to be born
@@ -274,6 +294,7 @@ ENV_HEIGHT = 100
 ### 图形界面模式
 
 运行图形用户界面：
+
 ```bash
 python GUI.py
 ```
@@ -281,7 +302,8 @@ python GUI.py
 图形界面如下:
 ![](./Pic/image.png)
 
-GUI功能包括：
+GUI 功能包括：
+
 - **模拟控制**: 开始、暂停、重置、单步执行、随机初始化
 - **编辑模式**: 手动添加/移除细胞
 - **规则设置**: 实时修改游戏规则
@@ -295,11 +317,13 @@ GUI功能包括：
 ### 训练模式
 
 启动训练脚本：
+
 ```bash
 python train.py
 ```
 
 训练参数配置（在`Module/Configs/config.py`中）：
+
 - `MAX_EPISODES`: 最大训练回合数（默认：2000）
 - `MAX_STEPS`: 每回合最大步数（默认：500）
 - `LEARNING_RATE`: 学习率（默认：1e-3）
@@ -310,6 +334,7 @@ python train.py
 ### 评估模式
 
 评估训练好的模型：
+
 ```bash
 python evaluate.py .\Models\Default_model.pth
 ```
@@ -319,42 +344,46 @@ python evaluate.py .\Models\Default_model.pth
 ### 状态表示
 
 每个细胞的状态是其视野范围内的网格状态：
+
 - 状态维度：`(2 * VISION + 1)²`
-- 每个位置：0（空）或1（有细胞）
-- 总状态空间：`(11)² = 121`（当VISION=5时）
+- 每个位置：0（空）或 1（有细胞）
+- 总状态空间：`(11)² = 121`（当 VISION=5 时）
 
 ### 动作空间
 
-每个细胞有9个可能的动作：
+每个细胞有 9 个可能的动作：
+
 - 0: 不动
-- 1-8: 向8个方向移动（上、下、左、右、四个对角线）
+- 1-8: 向 8 个方向移动（上、下、左、右、四个对角线）
 
 ### 奖励函数
 
 奖励函数设计鼓励种群长期生存：
+
 ```python
 def __calculate_reward(self, step):
     population = self.env.get_population()
     density = self.env.new_density()
-    
+
     # 基础奖励：种群数量
     reward = population / (self.width * self.height)
-    
+
     # 密度奖励：避免过度拥挤或过于稀疏
     if density 在合适范围内:
         reward += 0.1
-    
+
     # 存活时间奖励
     reward += step * 0.002
-    
+
     return reward
 ```
 
 ### 训练算法
 
-使用深度Q学习（DQN）算法：
+使用深度 Q 学习（DQN）算法：
+
 1. **经验回放**：存储转移`(s, a, r, s', done)`到缓冲区
-2. **目标网络**：使用独立的目标网络计算目标Q值
+2. **目标网络**：使用独立的目标网络计算目标 Q 值
 3. **ε-贪婪策略**：平衡探索与利用
 4. **双网络更新**：定期将策略网络参数复制到目标网络
 
@@ -362,8 +391,8 @@ def __calculate_reward(self, step):
 
 ### 性能优化
 
-1. **C++核心**：游戏逻辑在C++中实现，提供高性能模拟
-2. **PyBind11绑定**：高效的C++/Python接口，减少数据拷贝
+1. **C++核心**：游戏逻辑在 C++中实现，提供高性能模拟
+2. **PyBind11 绑定**：高效的 C++/Python 接口，减少数据拷贝
 3. **批量处理**：细胞状态和动作批量处理，提高效率
 
 ### 可扩展性
@@ -374,19 +403,22 @@ def __calculate_reward(self, step):
 
 ### 用户体验
 
-1. **直观的GUI**：提供完整的可视化控制和实时反馈
+1. **直观的 GUI**：提供完整的可视化控制和实时反馈
 2. **实时统计**：显示种群动态和训练进度
 3. **交互式编辑**：支持手动编辑细胞布局
+4. **自由编辑规则**：可以自由改变游戏规则
 
 ## 故障排除
 
 ### 常见问题
 
 1. **构建失败**：
+
    - 确保安装了 Conda 并正确安装了所有依赖
    - 确保安装了 MSVC(for Windows) 构建工具或 GNU Tool Chain(for Linux)
 
 2. **导入错误**：
+
    - 确保 `smart_life_core.pyd` 或 `smart_life_core.so` 在项目根目录
    - 检查 Python 环境是否正确激活
    - 验证依赖包是否安装完整
@@ -398,7 +430,7 @@ def __calculate_reward(self, step):
 
 ### 调试建议
 
-1. 启用GUI的调试日志
+1. 启用 GUI 的调试日志
 2. 使用`test_windows.py`验证核心功能
 
 ## 未来发展
@@ -417,14 +449,14 @@ def __calculate_reward(self, step):
 
 ## 代码规范
 
-- C++代码遵循Google C++风格指南
-- Python代码遵循PEP 8规范
+- C++代码遵循 Google C++风格指南
+- Python 代码遵循 PEP 8 规范
 - 使用有意义的变量和函数名
 - 添加适当的注释和文档字符串
 
 ## 许可证
 
-本项目基于MIT许可证开源。详见[LICENSE](LICENSE)文件。
+本项目基于 MIT 许可证开源。详见[LICENSE](LICENSE)文件。
 
 ## 致谢
 
@@ -433,4 +465,4 @@ def __calculate_reward(self, step):
 
 ## 反馈
 
-若有 Bug 或想要的新 feature，请在 [https://github.com/Joker-1212/ConwayLifegame/issues](https://github.com/Joker-1212/ConwayLifegame/issues) 中与我们分享！
+若有 Bug 或想要的新 feature，请在 [https://github.com/Joker-1212/ConwayLifegame/issues](https://github.com/Joker-1212/ConwayLifegame/issues) 中与我们分享或给我们提供 Pull Request！
