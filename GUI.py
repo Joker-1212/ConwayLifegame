@@ -51,6 +51,10 @@ class GUI:
         }
         state = (self.configs["VISION"] * 2 + 1) ** 2
         action = 9
+        self.color_r = 255
+        self.color_g = 255
+        self.color_b = 255
+        self.color_a = 255
 
         # 细胞 Agent
         model = DQNetwork(state, action, self.configs["HIDDEN_SIZE"])
@@ -175,7 +179,7 @@ class GUI:
                         dpg.add_text("Status: Ready", tag="training_status")
                         dpg.add_separator()
                         dpg.add_text("Model Loading")
-                        dpg.add_input_text(label="Path", default_value=".\\Default_model.pth", tag="model_path_input")
+                        dpg.add_input_text(label="Path", default_value=".\\Models\\Default_model.pth", tag="model_path_input")
                         dpg.add_button(label="Load Model", callback=self.load_model)
 
                     # 统计数据展示
@@ -193,6 +197,36 @@ class GUI:
                     with dpg.collapsing_header(label="Configuration"):
                         dpg.add_input_int(label="Grid Size", default_value=self.configs["ENV_WIDTH"], tag="config_size")
                         dpg.add_input_float(label="Initial Density", default_value=self.configs["INITIAL_CELLS_PORTION"], tag="config_density")
+                        dpg.add_separator()
+                        dpg.add_text("Cell color")
+                        dpg.add_slider_int(
+                            label="R", 
+                            tag="config_color_r",
+                            default_value=self.color_r,
+                            min_value=0,
+                            max_value=255
+                        )
+                        dpg.add_slider_int(
+                            label="G", 
+                            tag="config_color_g",
+                            default_value=self.color_g,
+                            min_value=0,
+                            max_value=255
+                        )
+                        dpg.add_slider_int(
+                            label="B", 
+                            tag="config_color_b",
+                            default_value=self.color_b,
+                            min_value=0,
+                            max_value=255
+                        )
+                        dpg.add_slider_int(
+                            label="A", 
+                            tag="config_color_a",
+                            default_value=self.color_a,
+                            min_value=0,
+                            max_value=255
+                        )
                         dpg.add_button(label="Apply Config", callback=self.apply_config)
                 
                 # 游戏网格
@@ -299,6 +333,7 @@ class GUI:
         """
         绘制细胞
         """
+        cell_color = (self.color_r, self.color_g, self.color_b, self.color_a)
         if not dpg.does_alias_exist("grid_drawlist"):
             return
         
@@ -314,8 +349,8 @@ class GUI:
             dpg.draw_rectangle(
                 [cell["x"] * self.cell_size, cell["y"] * self.cell_size],
                 [(cell['x'] + 1) * self.cell_size, (cell['y'] + 1) * self.cell_size],
-                color=(0, 0, 255, 255),
-                fill=(0, 0, 255, 255),
+                color=cell_color,
+                fill=cell_color,
                 parent="grid_drawlist",
                 tag=f"C{cell['id']}"
             )
@@ -465,6 +500,10 @@ class GUI:
             new_width = dpg.get_value("config_size")
             new_height = dpg.get_value("config_size")
             new_density = dpg.get_value("config_density")
+            new_color_r = dpg.get_value("config_color_r")
+            new_color_g = dpg.get_value("config_color_g")
+            new_color_b = dpg.get_value("config_color_b")
+            new_color_a = dpg.get_value("config_color_a")
 
             if new_width <= 0 or new_height <= 0:
                 self.log("Invalid grid dimensions", "ERROR")
@@ -473,6 +512,10 @@ class GUI:
             self.configs["ENV_WIDTH"] = new_width
             self.configs["ENV_HEIGHT"] = new_height
             self.configs["INITIAL_CELLS_PORTION"] = new_density
+            self.color_r = new_color_r
+            self.color_g = new_color_g
+            self.color_b = new_color_b
+            self.color_a = new_color_a
 
             # 重新初始化环境
             self.initialize_environment()
@@ -506,8 +549,6 @@ class GUI:
             energy_consumption = dpg.get_value("rule_energy_consumption")
             restore_prob = dpg.get_value("rule_restore_prob")
             restore_value = dpg.get_value("rule_restore_value")
-            env_width = dpg.get_value("config_width")
-            env_height = dpg.get_value("config_height")
 
             if (live_min < 0 or live_max < live_min or live_max > 8):
                 self.log("Fail applying rules", "ERROR")
@@ -524,9 +565,9 @@ class GUI:
             if (restore_prob < 0.0 or restore_prob > 1.0 or restore_value < 0.0):
                 self.log("Fail applying rules", "ERROR")
                 return
-            if (env_height <= 0 or env_width <= 0 or env_height > 200 or env_width > 200):
-                self.log("Fail applying rules", "ERROR")
-                return
+            # if (env_height <= 0 or env_width <= 0 or env_height > 200 or env_width > 200):
+            #     self.log("Fail applying rules", "ERROR")
+            #     return
             
             self.configs["LIVE_MIN"] = live_min
             self.configs["LIVE_MAX"] = live_max
@@ -537,8 +578,6 @@ class GUI:
             self.configs["ENERGY_CONSUMPTION"] = energy_consumption
             self.configs["RESTORE_PROB"] = restore_prob
             self.configs["RESTORE_VALUE"] = restore_value
-            self.configs["ENV_WIDTH"] = env_width
-            self.configs["ENV_HEIGHT"] = env_height
 
             # 重新加载环境以应用新规则
             self.initialize_environment()
