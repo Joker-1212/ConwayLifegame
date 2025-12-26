@@ -30,17 +30,17 @@
 使用 Conda 创建环境并安装 Python 依赖：
 
 ```bash
-conda create -n conway python=3.9
+conda create -n conway
 conda activate conway
 conda install --yes --file requirements.txt
-pip install dearpygui pybind11
+pip install dearpygui
 ```
 
 或者使用 pip：
 
 ```bash
 pip install -r requirements.txt
-pip install dearpygui pybind11
+pip install dearpygui
 ```
 
 #### 系统依赖
