@@ -23,8 +23,8 @@ class Config:
         self.configs["HIDDEN_SIZE"] = 512
         
         # 训练控制
-        self.configs["MAX_EPISODES"] = 2000
-        self.configs["MAX_STEPS"] = 500
+        self.configs["MAX_EPISODES"] = 10
+        self.configs["MAX_STEPS"] = 10
         self.configs["EPSILON_START"] = 1.0
         self.configs["EPSILON_END"] = 0.01
         self.configs["EPSILON_DECAY"] = 0.95
