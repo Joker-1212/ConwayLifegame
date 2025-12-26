@@ -454,8 +454,7 @@ class GUI:
             if process.returncode == 0:
                 self.log("Training process completed successfully")
                 dpg.set_value("training_status", "Status: Training completed")
-                dpg.set_value("trainging_progress", 0.0)
-                self.load_model()
+                dpg.set_value("training_progress", 0.0)
             else:
                 self.log("Training process failed", "ERROR")
                 dpg.set_value("training_status", "Status: Training failed")
@@ -466,7 +465,7 @@ class GUI:
         
         finally:
             self.training_auto = False
-            dpg.set_value("Training progress", 0.0)
+            dpg.set_value("training_progress", 0.0)
 
     def load_model(self):
         """
